@@ -3,7 +3,7 @@ const pluginsConf = require('./config/plugins/index')
 module.exports = {
     //注意，此处需要填写你部署在nginx下的文件夹名称，如果是根目录，那么可以注释掉此行，注释掉后本地打开index.html无法访问
     //base: "/dist/",
-    title: "大飞个人博客",
+    title: "小邓个人博客",
     description: '点赞、转发、收藏',
     head: [
         ['link', { rel: 'icon', href: '/img/favicon.ico' }],
@@ -20,7 +20,7 @@ module.exports = {
         authorAvatar: '/avatar.png',
         // 最后更新时间
         lastUpdated: '上次更新', // string | boolean
-        author: '大飞',
+        author: '小邓',
         // 项目开始时间
         startYear: '2022',
         nav: navConf,

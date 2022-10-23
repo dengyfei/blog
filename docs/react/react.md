@@ -1,6 +1,6 @@
 ---
 title: react
-date: 2302-10-21 12:44:15
+date: 2022-10-21 12:44:15
 tags:
   - 'react'
 categories:

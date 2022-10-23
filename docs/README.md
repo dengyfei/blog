@@ -1,7 +1,8 @@
 ---
 home: true
-heroText: '大飞的个人博客'
-bgImage: '/img/5.jpg'
+heroText: '小邓的个人博客'
+# bgImage: '/img/5.jpg'
+bgImage: '/img/3.jpg'
 bgImageStyle: { height: '350px' }
 # faceImage: '/head.png'
 # heroImage: '/hero_white.png'
