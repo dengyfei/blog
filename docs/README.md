@@ -1,6 +1,6 @@
 ---
 home: true
-heroText: '小邓的个人博客'
+heroText: '小邓同学'
 # bgImage: '/img/5.jpg'
 bgImage: '/img/3.jpg'
 bgImageStyle: { height: '350px' }
