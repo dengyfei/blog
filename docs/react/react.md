@@ -766,4 +766,90 @@ css modules 并不是 React 特有的解决方案，所有使用了类似于 web
 
 不过 React 脚手架已经内置了 css modules 的配置，我们只需要将普通的`.css/.less/.sass`等文件的文件名都修改成`.module.css`、`.module.less`、`.module.scss`等，之后就可以引入并使用了。
 
+我们可以在 app.module.css 文件中
+
+```css
+/* app.module.css文件 */
+.title {
+  color: red;
+}
+```
+
+然后，我们就可以在 app.js 中引用 css module 文件了，css module 会暴露一个对象。
+
+```js
+import React, { Component } from 'react'
+
+import AppStyle from './app.module.css'
+
+export default class App extends Component {
+  render() {
+    return (
+      <div>
+        <h2 className={AppStyle.title}>hello react</h2>
+      </div>
+    )
+  }
+}
+```
+
+css module 可以解决局部作用域的问题，不会污染全局样式。但是 css module 引用类名时不能使用连字符(.home-title 是不被识别的)，因为 JavaScript 中不识别连字符。另外对于一些需要动态改变的样式，css module 也无法完成，这种情况下依然是需要靠内联模式来完成的。
+
+### 四、css in js
+
+css in js 指的是一种模式，其中 css 由 JavaScript 生成。这部分功能是由第三方库实现的，目前最为流行的主要有：[styled-components](https://github.com/styled-components/styled-components) 和 [emotion](https://github.com/emotion-js/emotion)。这里主要介绍 style-components。
+
+**styled-components 的本质是通过函数的调用，这个函数接收一个对象，最终创建出一个 React 组件，这个组件会被自动添加上一个唯一的 class 和相关的样式**
+
+首先，我们需要安装 styled-components
+
+```js
+yarn add styled-components
+```
+
+然后就可以向下面那样使用了
+
+```js
+import React, { Component } from 'react'
+import styled from 'styled-components'
+// 使用styled调用函数生成一个React组件，并添加样式，由于是React组件，所以返回值的首字母必须大写
+const MyDiv = styled.div({
+  color: 'red',
+  '.title': {
+    fontSize: '50px',
+  },
+})
+
+export default class app extends Component {
+  render() {
+    return (
+      <MyDiv>
+        <h2 className="title">hello react</h2>
+      </MyDiv>
+    )
+  }
+}
+```
+
+`styled.标签名`是一个函数，该函数会返回一个 react 组件，而这个组件最后会被渲染成 styled 后面接的那个标签。
+
+最终上面的代码会被渲染成下面的结构：
+
+![styled_components](./image/react/styled_components.png)
+
+可以看见，调用`styled.标签名`这个函数生成的标签会被自动绑定一个唯一的类，这样就可以避免污染和覆盖了。
+
+在 JavaScript 中，模板字符串也可以调用函数。因此上面`styled.标签名`函数的调用也可以用模板字符串来实现。
+
+```js
+const MyDiv = styled.div`
+  color: red;
+  .title {
+    font-size: 50px;
+  }
+`
+```
+
+而且可以看到，使用模板字符串调用`styled.标签名`函数的传参更符合 css 的写法，所以我们更多的情况会使用模板字符串来调用这个函数。
+
 <h3 id="2">PureComponent</h3>
