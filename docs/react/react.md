@@ -852,4 +852,143 @@ const MyDiv = styled.div`
 
 而且可以看到，使用模板字符串调用`styled.标签名`函数的传参更符合 css 的写法，所以我们更多的情况会使用模板字符串来调用这个函数。
 
+而且，当使用模块字符串调用`styled.标签名`函数时，我们借助一些特性帮助我们更方便的书写样式。
+
+#### 1、props 属性
+
+通过给 styled 生成的 react 组件传值，然后使用 props 取值，能有效的帮助我们解决动态样式问题。
+
+::: tip
+获取 props 需要通过${}传入一个插值函数，props 会作为该函数的参数
+:::
+
+::: tip
+传递给 styled 生成的 react 组件上的属性会穿透给最后生成的标签
+:::
+
+```jsx
+import React, { Component } from 'react'
+import styled from 'styled-components'
+
+const HYInput = styled.input`
+  color: ${(props) => props.color};
+`
+
+export default class App extends Component {
+  constructor() {
+    super()
+    this.state = {
+      color: 'red',
+    }
+  }
+  render() {
+    return (
+      <div>
+        <HYInput color={this.state.color} type="text" />
+      </div>
+    )
+  }
+}
+```
+
+传递给 HYInput 的 color 和 type 属性最后都会穿透到 input 标签上
+
+![style_components_example](./image/react/styled_components_example.png)
+
+#### attrs 属性
+
+styled-components 属性除了通过 props 传递，也可以通过添加 attrs 属性赋予。传递给 attrs 的属性会被直接添加到最后的标签上。
+:::tip
+attrs 也是一个函数，接收一个对象作为参数，并且返回一个函数。所以也可以通过模板字符串调用
+:::
+
+```jsx
+import React, { Component } from 'react'
+import styled from 'styled-components'
+
+const HYInput = styled.input.attrs({
+  placeholder: '请输入',
+})`
+  color: ${(props) => props.color};
+`
+export default class app extends Component {
+  constructor() {
+    super()
+    this.state = {
+      color: 'red',
+      fontSize: '16px',
+    }
+  }
+  render() {
+    const { color, fontSize } = this.state
+    return (
+      <div>
+        <HYInput color={color} fontSize={fontSize} />
+      </div>
+    )
+  }
+}
+```
+
+#### 3、继承
+
+假如有两个组件的样式如下：
+
+```jsx
+const HYButton = styled.button`
+  padding: 10px 20px;
+  border-color: red;
+  color: #fff;
+`
+const HYPrimaryButton = styled.button`
+  padding: 10px 20px;
+  border-color: red;
+  color: green;
+`
+```
+
+这两个组件的样式非常相似，仅仅只是字体颜色不同，如果按照上面的形式书写，未免太冗余了。此时我们就可以使用 styled-components 的另一个特性： 继承。
+
+```jsx
+import styled from 'styled-components'
+
+const HYButton = styled.button`
+  padding: 10px 20px;
+  border-color: red;
+  color: #fff;
+`
+//HYPrimaryButton继承HYButton的样式，同样是生成button按钮
+const HYPrimaryButton = styled(HYButton)`
+  color: green;
+`
+```
+
+::: warning
+只有最后生成的是同类型的标签才能使用继承
+:::
+
+#### 4、主题
+
+一个工程中可能存在一部分样式是全局样式，即，大部分标签都会使用到这些样式。那么我们可以将这部分样式写成主题，这样所有的标签都可以使用主题中的样式，而且日后维护起来也是非常的方便。
+
+使用主题需要从 styled-components 中引入 ThemeProvider(一个 react 组件)，并且传入一个 theme 属性(一个对象)。同样可以通过 props 在调用`styled.标签名`函数时获取。
+
+```jsx
+import React, { Component } from 'react'
+import styled, { ThemeProvider } from 'styled-components'
+
+const DivStyle = styled.div`
+  color: ${(props) => props.theme.color};
+`
+export default class app extends Component {
+  render() {
+    return (
+      <ThemeProvider theme={{ color: 'red', fontSize: '20px' }}>
+        <DivStyle>hello react</DivStyle>
+      </ThemeProvider>
+    )
+  }
+}
+```
+
 <h3 id="2">PureComponent</h3>
