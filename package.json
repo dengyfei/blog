@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "docs:dev": "vuepress dev docs --temp .temp",
-    "docs:build": "vuepress build docs",
+    "dev": "vuepress dev docs --temp .temp",
+    "build": "vuepress build docs",
     "deploy": "bash deploy.sh",
     "deployee": "bash deploy_gitee.sh"
   },
