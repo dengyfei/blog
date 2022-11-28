@@ -389,7 +389,7 @@ increment() {
 
 **4.componentWillUnmount:** 在组件卸载及销毁之前调用。一般用于执行一些清理操作，比如清除订阅。
 
-**5.shouldComponentUpdate:** 这个生命周期函数的作用是提高性能，减少不必要的渲染，详情见 [PureComponent](#2)
+**5.shouldComponentUpdate:** 这个生命周期函数的作用是提高性能，减少不必要的渲染，详情见 [PureComponent](#PureComponent)
 
 ## 组件通信
 
@@ -991,4 +991,45 @@ export default class app extends Component {
 }
 ```
 
-<h3 id="2">PureComponent</h3>
+## 补充
+
+### PureComponent
+
+```jsx
+import React, { Component } from 'react'
+class Child extends Component {
+  render() {
+    console.log('Child被更新')
+    return <h2>Child</h2>
+  }
+}
+export default class app extends Component {
+  constructor() {
+    super()
+    this.state = {
+      message: 'hello world',
+    }
+  }
+  render() {
+    console.log('app被更新')
+    return (
+      <div>
+        <h2>{this.state.message}</h2>
+        <Child />
+        <button onClick={(e) => this.changeMsg()}>改变</button>
+      </div>
+    )
+  }
+  changeMsg() {
+    this.setState({
+      message: 'hello react',
+    })
+  }
+}
+```
+
+上面的代码好像没啥问题，然而当我们点击按钮时，发现即使我们改变的仅仅是 app 组件当中的状态，但 Child 组件的 render 函数也会重新执行。即，日志中会同时打印：`app被更新`, `child被更新`。
+
+在 react 当中，如果某棵嵌套组织树如下，当我们改变 app 组件中的某个状态时，所有组件的 render 函数都会重新执行一遍，性能势必也会下降。事实上，这种情况下，很多组件没必要重新执行它们的 render 函数。**一个组件的 render 函数是否要重新执行应该有一个前提，就是组件所依赖的数据(state、props)发生改变。**
+
+那么我们该如何来控制

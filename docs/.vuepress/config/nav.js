@@ -14,9 +14,9 @@ module.exports = [
         ]
     },
     {
-        text: '前端基础', link: '/生活分享/', icon: 'reco-faq',
+        text: '前端基础', icon: 'reco-faq',
         items: [
-            { text: '生活分享', link: '/生活分享/life' },
+            { text: 'css', link: '/css/sass' },
         ]
     },
     {
