@@ -389,7 +389,86 @@ increment() {
 
 **4.componentWillUnmount:** 在组件卸载及销毁之前调用。一般用于执行一些清理操作，比如清除订阅。
 
-**5.shouldComponentUpdate:** 这个生命周期函数的作用是提高性能，减少不必要的渲染，详情见 [PureComponent](#PureComponent)
+**5.shouldComponentUpdate:** 这个生命周期函数的作用是提高性能，减少不必要的渲染。
+
+shouldComponentUpdate 其实是通过控制是否调用 render 函数从而减少不必要的渲染来提高性能的。当一个组件 UI 界面所依赖的状态(包括 state 和 props)没有发生改变时，我们没有必要重新渲染组件。这个时候我们就需要通过 shouldComponentUpdate 函数控制组件不去调用组件的 render 函数。
+
+shouldComponentUpdate 函数接收两个参数：
+
+参数一：nextProps，表示修改之后最新的 props 属性
+
+参数二：nextState，表示修改之后最新的 state 属性
+
+:::tip
+shouldComponentUpdate 函数返回的是一个 Boolean 值。如果返回的是 true，表明需要调用 render 函数；如果返回的是 false，表明不需要调用 render 方法。默认返回 true
+:::
+
+```jsx
+import React, { Component } from 'react'
+
+export default class App extends Component {
+  constructor() {
+    super()
+    this.state = {
+      message: 'hello world',
+      name: 'tom',
+    }
+  }
+  render() {
+    console.log('render函数更新了')
+    return (
+      <div>
+        <h2>{this.state.name}</h2>
+        <button onClick={(e) => this.changeVal()}>改变</button>
+      </div>
+    )
+  }
+  changeVal() {
+    this.setState({
+      message: 'hello react',
+    })
+  }
+}
+```
+
+上面这段代码每次点击按钮，render 函数都会执行一遍并打印。但是我们细想一些，render 函数所依赖的 this.state.name 从始至终都未曾改变过，因此，这种情况下的 render 函数其实就没必要重复执行了。这个时候，我们就可以使用 shouldComponentUpdate 函数来控制 render 的执行。
+
+```jsx
+import React, { Component } from 'react'
+
+export default class App extends Component {
+  constructor() {
+    super()
+    this.state = {
+      message: 'hello world',
+      name: 'tom',
+    }
+  }
+  shouldComponentUpdate(nextProps, nextState) {
+    if (this.state.name !== nextState.name) {
+      return true
+    }
+    return false
+  }
+
+  render() {
+    console.log('render函数更新了')
+    return (
+      <div>
+        <h2>{this.state.name}</h2>
+        <button onClick={(e) => this.changeVal()}>改变</button>
+      </div>
+    )
+  }
+  changeVal() {
+    this.setState({
+      message: 'hello react',
+    })
+  }
+}
+```
+
+优化之后的代码只有当 UI 界面依赖的`this.state.name`(本次状态中的值)不等于`nextState.name`(更新后状态中的值)时，shouldComponentUpdate 函数才会返回 true，即允许 render 函数重新执行。否则，render 函数是不会重新执行的。
 
 ## 组件通信
 
@@ -1032,4 +1111,53 @@ export default class app extends Component {
 
 在 react 当中，如果某棵嵌套组织树如下，当我们改变 app 组件中的某个状态时，所有组件的 render 函数都会重新执行一遍，性能势必也会下降。事实上，这种情况下，很多组件没必要重新执行它们的 render 函数。**一个组件的 render 函数是否要重新执行应该有一个前提，就是组件所依赖的数据(state、props)发生改变。**
 
-那么我们该如何来控制
+![component_tree](./image/react/component_tree.png)
+
+那我们如何控制组件的 render 函数不受其他组件影响呢？其实，react 早就想到了这一点，所以在 react 中导出了另一个类：**PureComponent**
+
+在 PureComponent 中，react 已经替我们完成了 shouldComponentUpdate 函数中的判断，而且 PureComponent 继承 Component 类，拥有 Component 类中的所有属性和方法。既然这样，前面的代码就可以进一步优化。
+
+```jsx
+import React, { PureComponent } from 'react'
+class Child extends PureComponent {
+  render() {
+    console.log('Child被更新')
+    return <h2>Child</h2>
+  }
+}
+export default class app extends PureComponent {
+  constructor() {
+    super()
+    this.state = {
+      message: 'hello world',
+    }
+  }
+  render() {
+    console.log('app被更新')
+    return (
+      <div>
+        <h2>{this.state.message}</h2>
+        <Child />
+        <button onClick={(e) => this.changeMsg()}>改变</button>
+      </div>
+    )
+  }
+  changeMsg() {
+    this.setState({
+      message: 'hello react',
+    })
+  }
+}
+```
+
+经过优化后的代码，点击按钮后，虽然 app 组件的状态发生了改变，但是由于 Child 组件的状态没有发生变化且不依赖 App 组件中的任何状态，即 Child 的 state 和 props 均未发生变化，因此不会重新执行 render 函数。
+
+:::warning
+注意，继承了 PureComponent 的组件是不允许再调用 shouldComponentUpdate 函数的了，因为 PureComponent 会重写组件的 shouldComponentUpdate 方法
+:::
+
+### memo
+
+类组件可以通过继承 PureComponent 来优化是否需要更新组件，但是如果是函数式组件呢？肯定不能通过继承 PureComponent 来实现，因为 PureComponent 本质上是 React 内调用了 shouldComponentUpdate 生命周期函数来判断是否需要调用 render 函数，而函数式组件中是没有生命周期。
+
+事实上，函数式组件是通过 memo 来优化是否需要更新组件的。memo 是一个高阶组件，这个高阶组件接受一个组件作为参数，并返回一个组件。
