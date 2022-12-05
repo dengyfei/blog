@@ -1160,4 +1160,68 @@ export default class app extends PureComponent {
 
 类组件可以通过继承 PureComponent 来优化是否需要更新组件，但是如果是函数式组件呢？肯定不能通过继承 PureComponent 来实现，因为 PureComponent 本质上是 React 内调用了 shouldComponentUpdate 生命周期函数来判断是否需要调用 render 函数，而函数式组件中是没有生命周期。
 
-事实上，函数式组件是通过 memo 来优化是否需要更新组件的。memo 是一个高阶组件，这个高阶组件接受一个组件作为参数，并返回一个组件。
+事实上，函数式组件是通过 memo 来优化是否需要更新组件的。memo 是一个高阶组件，这个高阶组件接受一个组件作为参数，并返回一个 React 组件。
+
+```jsx
+import React, { PureComponent, memo } from 'react'
+
+const MemoMain = memo(function Main() {
+  console.log('main 组件')
+  return <div>main 组件</div>
+})
+
+export default class app extends PureComponent {
+  constructor() {
+    super()
+    this.state = {
+      count: 0,
+    }
+  }
+  render() {
+    return (
+      <div>
+        <MemoMain />
+        <h2>{this.state.count}</h2>
+        <button onClick={(e) => this.change()}>改变</button>
+      </div>
+    )
+  }
+  change() {
+    this.setState({
+      count: this.state.count + 1,
+    })
+  }
+}
+```
+
+上面代码的效果和类组件继承 PureComponent 是一样的，点击按钮，app 组件的 render 函数会执行，但是 Main 组件中的函数不会执行。
+
+### ref
+
+在 react 中，可以通过 ref 来获取对应的 DOM 节点。主要有以下三种方式：
+
+**方式一：字符串方式。**
+
+给元素赋值一个字符串的 ref 属性，然后通过`this.refs.属性名`的可以获取到对应的 DOM 节点。这种方式官方已经不推荐了，并且在以后的版本中可能会被删除。
+
+```jsx
+import React, { PureComponent } from 'react'
+
+export default class app extends PureComponent {
+  render() {
+    return (
+      <div>
+        <h2 ref="titleRef">hello world</h2>
+        <button onClick={(e) => this.changeVal()}>改变</button>
+      </div>
+    )
+  }
+  changeVal() {
+    this.refs.titleRef.innerHTML = 'hello react'
+  }
+}
+```
+
+**方式二、对象方式。**
+
+通过`React.createRef( )`的方式创建一个对象，然后将这个对象赋值给元素的 ref 属性。使用时，直接通过访问这个对象的`current属性`就可以获取到对应的 DOM 节点。这种方式是 React 官方目前推荐的方式。
