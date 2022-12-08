@@ -1225,3 +1225,89 @@ export default class app extends PureComponent {
 **方式二、对象方式。**
 
 通过`React.createRef( )`的方式创建一个对象，然后将这个对象赋值给元素的 ref 属性。使用时，直接通过访问这个对象的`current属性`就可以获取到对应的 DOM 节点。这种方式是 React 官方目前推荐的方式。
+
+```js
+import React, { PureComponent, createRef } from 'react'
+
+export default class app extends PureComponent {
+  constructor() {
+    super()
+    this.titleRef = createRef()
+  }
+  render() {
+    return (
+      <div>
+        <h2 ref={this.titleRef}>hello world</h2>
+        <button onClick={(e) => this.changeVal()}>改变</button>
+      </div>
+    )
+  }
+  changeVal() {
+    this.titleRef.current.innerText = 'hello react'
+  }
+}
+```
+
+**方式三、函数方式。**
+
+我们还可以向 DOM 节点的 ref 属性传入一个函数，该函数会在 DOM 节点被挂载时进行回调。这个函数会传入一个元素对象，我们可以自己保存；使用时，直接拿到之前保存的元素对象即可。
+
+```js
+import React, { PureComponent } from 'react'
+
+export default class app extends PureComponent {
+  constructor() {
+    super()
+    this.titleRef = null
+  }
+  render() {
+    return (
+      <div>
+        <h2 ref={(arg) => (this.titleRef = arg)}>hello world</h2>
+        <button onClick={(e) => this.changeVal()}>改变</button>
+      </div>
+    )
+  }
+  changeVal() {
+    this.titleRef.innerHTML = 'hello react'
+  }
+}
+```
+
+:::tip
+注意：不能在函数式组件上使用 ref 属性，因为函数式组件没有 this 实例
+:::
+
+既然我们无法在函数式组件上使用 ref 属性，那如果我们想要获取对应的组件对象呢？此时，我们就需要使用高阶组件来转发 ref，这个高阶组件就是`React.forwardRef`
+
+这里提到一个新概念 ---- 高阶组件。什么是高阶组件呢？我们可以先看看高阶函数的定义。接收一个或多个函数作为参数并返回一个函数的的函数称为高阶函数。同理。高阶组件的参数是一个组件，返回值同样也是一个新组件的函数，高阶组件的英文是：Higher-Order Components，简称 HOC。
+
+我们可以进行如下解析：
+
+- 首先，高阶组件本身并不是一个组件，而纯粹是一个函数。
+- 其次，这个函数的参数是一个组件，返回值也是一个组件。
+
+ref 转发就是通过类组件创建一个 ref 对象，然后传递给子组件(函数式组件)。这样，函数式组件中就可以使用 ref 了。
+
+```js
+import React, { PureComponent, createRef, forwardRef } from 'react'
+
+const Child = forwardRef((props, ref) => {
+  console.log(props.name)
+  return <h2 ref={ref}>hello react</h2>
+})
+
+export default class app extends PureComponent {
+  constructor() {
+    super()
+    this.titleRef = createRef()
+  }
+  render() {
+    return (
+      <div>
+        <Child ref={this.titleRef} name="tom" />
+      </div>
+    )
+  }
+}
+```
