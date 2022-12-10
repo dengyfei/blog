@@ -1311,3 +1311,70 @@ export default class app extends PureComponent {
   }
 }
 ```
+
+### Fragment
+
+jsx 语法要求必须且只能返回一个根元素，例如下面的 jsx 语法中返回了一个 div 根元素。
+
+```jsx
+render() {
+  return (
+    <div>
+      <h2>hello world</h2>
+      <p>{ this.state.message }</p>
+    </div>
+  )
+}
+```
+
+但其实这个 div 并没有任何实质性的作用，因此 react 引入了 Fragment 的概念来充当根元素。Fragment 的作用类似于 vue 中的 template，当 react 遇到 Fragment 时，不会渲染出任何额外的 DOM 节点，从而提高性能。
+
+### Protals
+
+某些情况下，我们希望渲染的内容独立于父组件，甚至独立于当前挂载的 DOM 元素中(默认都是挂载到 id 为 root 的 DOM 元素上)。比如 dialog 弹框，通常我们希望它脱离其父组件而总是位于可视窗口的中间。而 Protals 就提供了这样的一种将子节点渲染到脱离父组件之外的 DOM 节点的优秀方案。
+
+Protals 的本质仍然是一个 React 组件，只不过这个组件不是以我们之前介绍的类组件或函数式组件的创建方式创建的，而是通过调用`ReactDom.createPortal`函数生成的。
+这个函数接收两个参数：
+
+- 1、要渲染在 Protals 中的 React 子元素，可以是一个元素、字符串或者 fragment；
+
+- 2、Protals 挂载的 DOM 元素
+
+**使用步骤：**
+
+1、修改 public/index.html 文件，添加 protals 挂载的节点
+![protals_parent_dom](./image/react/protals_parent_dom.png)
+
+2、编写节点样式
+![protals_css](./image/react/protals_css.png)
+
+3、编写组件代码
+
+```jsx
+import React, { PureComponent } from 'react'
+import ReactDom from 'react-dom'
+
+class Modal extends PureComponent {
+  constructor(props) {
+    super(props)
+  }
+  render() {
+    return ReactDom.createPortal(
+      this.props.children,
+      document.getElementById('modal')
+    )
+  }
+}
+
+export default class app extends PureComponent {
+  render() {
+    return (
+      <div>
+        <Modal>
+          <h2>hello world</h2>
+        </Modal>
+      </div>
+    )
+  }
+}
+```
