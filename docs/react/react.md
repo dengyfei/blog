@@ -13,6 +13,40 @@ categories:
 React 作为和 Vue、Angular 并驾齐驱的前端三大主流框架之一，其地位自然不言而喻，很多大厂都选择使用 React 作为日常开发的框架，很多程序员也都偏爱 React，主要原因在于 React 使用的 JSX(一种酷似 JavaScript 的语言)编写，导致 React 的灵活性是其他两大框架所无法匹敌的。而且 Vue 和 Angular 中很多的思想都是借鉴 React。所以，每个致力于献身前端事业的小伙伴都是有必要了解 React 的。
 :::
 
+## 初识 React
+
+开发 React 必须依赖三个库：
+
+- react：包含 react 所必须的核心代码
+- react-dom：react 渲染在不同平台所需要的核心代码
+- babel：将 jsx 转换成 JavaScript 代码的工具
+
+```html
+<body>
+  <div id="root"></div>
+
+  <!-- 引入依赖 -->
+  <script
+    src="https://unpkg.com/react@18/umd/react.development.js"
+    crossorigin
+  ></script>
+  <script
+    src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    crossorigin
+  ></script>
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+  <script type="text/babel">
+    //react@18之前
+    // ReactDOM.render(<h2>hello react</h2>, document.querySelector('#root'))
+
+    //react@18版本
+    const root = ReactDOM.createRoot(document.querySelector('#root')) //创建一个根
+    root.render(<h2>hello react</h2>) //在根组件中渲染内容
+  </script>
+</body>
+```
+
 ## 启动项目
 
 React 使用的脚手架是`create-react-app`，并且默认使用`yarn`作为包管理工具。因此，开发前我们需要执行以下命令在全局安装这两个工具：
@@ -1378,3 +1412,50 @@ export default class app extends PureComponent {
   }
 }
 ```
+
+### react-transition-group
+
+在开发中，我们想要给一个组件的显示和消失添加某种过渡动画，以增加用户体验。当然，我们可以通过原生的 css 来实现这些动画，但是 React 社区同样也为我们提供了[react-transition-group](https://reactcommunity.org/react-transition-group/)，用来完成过渡动画。这个库可以帮助我们方便的实现组件的入场和离场动画。
+
+:::tip
+react-transition-group 主要由以下四个组件组成：
+
+1、Transition：该组件是一个和平台无关的组件，在前端开发中，我们一般是结合 CSS 来完成过渡动画，所以笔记常用的是 CSSTransition。
+
+2、CSSTransition：完成过渡动画效果。
+
+3、SwitchTransition：完成两个组件显示和隐藏切换动画。
+
+4、TransitionGroup：将多个动画包裹其中，一般用于列表中元素的动画。
+:::
+
+#### CSSTransition
+
+CSSTransition 是基于 Transition 组件构建的，**它只允许包裹一个根元素。**
+
+CSSTransition 执行过程中，有三个状态：appear、enter、exit。
+
+它们有三种状态，需要定义对应的 css 样式：
+
+开始状态：对应的类是 `-appear`、`-enter`、`-exit`；
+
+执行动画：对应的类是 `-appear-active`、`-enter-active`、`-exit-active`；
+
+执行结束：对应的类是 `-appear-done`、`-enter-done`、`-exit-done`；
+
+**CSSTransition 常见对应的属性：**
+
+in：触发进入或者退出状态，通常是一个布尔值。
+:::tip
+当 in 为 true 时，触发进入状态，添加`-enter`、`-enter-active`的类名，并开始执行动画，当动画结束后，会移除这两个类名并添加`-enter-done`的类名。
+
+当 in 为 false 时，触发退出状态，添加`-exit`、`-exit-active`的类名，并开始执行动画，当动画结束后，会移除这两个类名并添加`-exit-done`的类名。
+:::
+
+classNames：动画 class 的名称，决定了在编写 css 时，对应的 class 名称，比如 card-enter、card-enter-active、card-enter-done。
+
+timeout：classNames 添加的时间，该属性并不会控制动画执行的时间，动画执行的时间是由 css 中的属性控制的。
+
+appear：是否在初次进入添加动画(需要和 in 同时为 true)。
+
+unmountOnExit：退出后卸载组件。当`unmountOnExit={ false }`时，组件的过渡仅仅是操作 css，即仅仅是隐藏组件，该组件并没有从 DOM 树上去除且依旧占据原来的位置；当`unmountOnExit={ true }`时，组件退出后会从 DOM 树上去除。默认是 false。
