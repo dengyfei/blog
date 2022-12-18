@@ -10,7 +10,7 @@ categories:
 ::: tip
 :star:前言
 
-React 作为和 Vue、Angular 并驾齐驱的前端三大主流框架之一，其地位自然不言而喻，很多大厂都选择使用 React 作为日常开发的框架，很多程序员也都偏爱 React，主要原因在于 React 使用的 JSX(一种酷似 JavaScript 的语言)编写，导致 React 的灵活性是其他两大框架所无法匹敌的。而且 Vue 和 Angular 中很多的思想都是借鉴 React。所以，每个致力于献身前端事业的小伙伴都是有必要了解 React 的。
+React 作为和 Vue、Angular 并驾齐驱的前端三大主流框架之一，其地位自然不言而喻。React 一直站在前端技术前沿，引领着前端发展。很多大厂都选择使用 React 作为日常开发的框架，很多程序员也都偏爱 React，主要原因在于 React 使用的 JSX(一种酷似 JavaScript 的语言)编写，导致 React 的灵活性是其他两大框架所无法匹敌的。而且 Vue 和 Angular 中很多的思想都是借鉴 React。所以，每个致力于献身前端事业的小伙伴都是有必要了解 React 的。
 :::
 
 ## 初识 React
@@ -42,10 +42,25 @@ React 作为和 Vue、Angular 并驾齐驱的前端三大主流框架之一，�
 
     //react@18版本
     const root = ReactDOM.createRoot(document.querySelector('#root')) //创建一个根
-    root.render(<h2>hello react</h2>) //在根组件中渲染内容
+    //在根组件中渲染内容
+    root.render(
+      <div>
+        <h2>hello react</h2>
+        <h2>hello world</h2>
+      </div>
+    )
   </script>
 </body>
 ```
+
+### 声明式编程
+
+React 使用的式声明式编程，虚拟 DOM 帮助我们从命令式编程转到声明式编程的模式。
+
+Virtual DOM(虚拟 DOM)是一种编程理念，UI 是以一种理想化或者说虚拟化的方式保存在内存中的，并且它是一个相当简单的 JavaScript 对象。我们可以通过`root.render`让虚拟 DOM 和真实 DOM 同步起来，这个过程称为协调。
+
+**React 渲染的整个流程：**
+首先我们编写的 jsx 代码会被 babel 解析成 React Element 对象，这就是虚拟 DOM，虚拟 DOM 实质就是普通的 JavaScript 对象。然后 react 会通过调用`root.render`函数让虚拟 DOM 同步为真实 DOM。
 
 ## 启动项目
 
@@ -109,6 +124,10 @@ root.render(<App />)
 而在 React 中，组件可以使用类和函数的方式开发。
 
 ## 组件化开发
+
+:::tip
+react 中有两种方式定义组件：类组件和函数式组件
+:::
 
 ### 类组件
 
@@ -182,9 +201,80 @@ export default class app extends Component {
 
 ![react_error](./image/react/react_error.png)
 
+### 类组件中的 this 问题
+
+```jsx
+class App extends React.Component {
+  constructor() {
+    super()
+    this.state = {
+      message: 'hello world',
+    }
+  }
+  btnClick() {
+    this.setState({
+      message: 'hello react',
+    })
+  }
+  render() {
+    return (
+      <div>
+        <h2>{this.state.message}</h2>
+        <button onClick={this.btnClick}>改变</button>
+      </div>
+    )
+  }
+}
+```
+
+上面的代码想要实现的逻辑是：点击按钮，改变 state 中 message 的值，从而改变界面上的渲染。但是，当我们点击按钮时，我们会发现，控制台会报下面的错误：
+
+![this_error](./image/react/this_error.png)
+
+这个错误很明显提示我们 btnClick 中的 this 是`undefined`，这是为啥呢？因为 JavaScript 类对象默认使用的是严格模式，而严格模式下，使用默认方式调用函数且未明确指定 this 的情况下，该函数的 this 就是指向`undefined`。
+
+有以下方式可以解决 this 问题：
+
+```jsx
+class App extends React.Component {
+  constructor() {
+    super()
+    this.state = {
+      message: 'hello world',
+    }
+    //方案一
+    this.btnClick = this.btnClick.bind(this)
+  }
+  btnClick() {
+    this.setState({
+      message: 'hello react',
+    })
+  }
+  render() {
+    return (
+      <div>
+        <h2>{this.state.message}</h2>
+        {/*方案一*/}
+        <button onClick={this.btnClick}>改变</button>
+
+        {/*方案二*/}
+        <button onClick={this.btnClick.bind(this)}>改变</button>
+
+        {/*方案三*/}
+        <button onClick={(e) => this.btnClick(e)}>改变</button>
+      </div>
+    )
+  }
+}
+```
+
 ## 状态管理
 
-在类组件的`constructor函数`中，`this.state`对象用来维护组件内的状态的。在开发中，如果我们直接修改`state`，React 内部并不能检测到状态发生了变化，也就不会重新渲染界面。因此，React 推荐我们使用`setState函数`修改状态。`setState函数`并不需要我们定义，它是继承自`React.Component`。
+在类组件的`constructor函数`中，`this.state`对象用来维护组件内的状态的。在开发中，如果我们直接修改`state`，React 内部并不能检测到状态发生了变化，也就不会重新渲染界面。因此，React 推荐我们使用`setState函数`修改状态。`setState函数`并不需要我们定义，它是`React.Component`中的方法。
+
+:::tip
+setState 内部完成了两件事情：1、改变 state 对象，2、自动执行 render 函数
+:::
 ::: warning
 `setState函数`要求传入两个参数。第一个参数是必须的，可以是一个对象或者函数，如果是一个函数，则必须返回一个对象。对象的属性表明要更新的数据。第二个参数是可选参数，要求传入一个函数，在该函数中可以获取本次更新后的状态。
 :::
@@ -1459,3 +1549,186 @@ timeout：classNames 添加的时间，该属性并不会控制动画执行的�
 appear：是否在初次进入添加动画(需要和 in 同时为 true)。
 
 unmountOnExit：退出后卸载组件。当`unmountOnExit={ false }`时，组件的过渡仅仅是操作 css，即仅仅是隐藏组件，该组件并没有从 DOM 树上去除且依旧占据原来的位置；当`unmountOnExit={ true }`时，组件退出后会从 DOM 树上去除。默认是 false。
+
+**CSSTransition 常见的钩子函数：**
+onEnter：在进入动画之前被触发
+
+onEntering：在应用进入动画时被触发
+
+onEntered：在应用进入动画结束后被触发
+
+onExit：在退出动画之前被触发
+
+onExiting：在应用退出动画时被触发
+
+onExited：在应用退出动画结束后被触发
+
+```jsx
+//app.js
+
+import React, { PureComponent } from 'react'
+import { CSSTransition } from 'react-transition-group'
+import './app.css'
+
+export default class App extends PureComponent {
+  constructor() {
+    super()
+    this.state = {
+      isShow: true,
+    }
+  }
+  render() {
+    const { isShow } = this.state
+    return (
+      <div>
+        <button onClick={(e) => this.changState()}>显示/隐藏</button>
+        <CSSTransition
+          in={isShow}
+          classNames="card"
+          timeout={300}
+          onEnter={(el) => console.log('开始进入')}
+        >
+          <div className="box"></div>
+        </CSSTransition>
+      </div>
+    )
+  }
+  changState() {
+    this.setState({
+      isShow: !this.state.isShow,
+    })
+  }
+}
+```
+
+```css
+/* app.css */
+
+.box {
+  width: 100px;
+  height: 100px;
+  background-color: red;
+}
+
+.card-enter {
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+.card-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: all 300ms;
+}
+
+.card-exit {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.card-exit-active {
+  opacity: 0;
+  transform: scale(0.4);
+  transition: all 300ms;
+}
+
+.card-exit-done {
+  opacity: 0;
+}
+```
+
+### SwitchTransition
+
+SwitchTransition 可以完成两个组件之间切换的炫酷动画。比如我们有一个按钮，需要在 on 和 off 之间切换，并且希望看到 on 先从左边退出，off 再从右边进入。这个动画在 vue 中被称为 vue transition modes，而 react-transition-group 中使用 SwitchTransition 来实现该动画。
+
+SwitchTransition 中主要有一个属性：mode，这个属性有两个值：
+
+- in-out：表示新组件先进入，旧组件再移除
+- out-in：表示旧组件先移除，新组件再进入
+
+:::tip
+SwitchTransition 组件里面要有 CSSTransition 或者 Transition 组件，不能直接包裹要切换的组件
+
+SwitchTransition 里面的 CSSTransition 或 Transition 组件不再像以前那样接收 in 属性来判断元素是何种状态，取而代之的是 key 属性
+
+SwitchTransition 与 CSSTransition 的区别在于：CSSTransition 只能控制元素的显示和隐藏或者其他的 css 属性；而 SwitchTransition 不仅控制 css 属性还能改变显示的文本
+:::
+
+```jsx
+// app.js
+
+import React, { PureComponent } from 'react'
+import { CSSTransition, SwitchTransition } from 'react-transition-group'
+import './app.css'
+
+export default class App extends PureComponent {
+  constructor() {
+    super()
+    this.state = {
+      isOn: true,
+    }
+  }
+  render() {
+    const { isOn } = this.state
+    return (
+      <div>
+        <SwitchTransition mode="out-in">
+          <CSSTransition key={isOn} timeout={1000} classNames="card">
+            <button onClick={(e) => this.changState()}>
+              {isOn ? 'on' : 'off'}
+            </button>
+          </CSSTransition>
+        </SwitchTransition>
+      </div>
+    )
+  }
+  changState() {
+    this.setState({
+      isOn: !this.state.isOn,
+    })
+  }
+}
+```
+
+```css
+/* app.css */
+
+.card-enter {
+  opacity: 0;
+  transform: translateX(50%);
+}
+
+.card-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: all 1000ms;
+}
+
+.card-exit {
+  opacity: 1;
+}
+
+.card-exit-active {
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: all 1000ms;
+}
+```
+
+### TransitionGroup
+
+当我们有一组 CSSTransition 时，需要将这些 CSSTransition 统一放入到一个 TransitionGroup 中来完成动画。
+
+```jsx
+<div>
+  <TransitionGroup>
+    {this.state.friends.map((item, index) => {
+      return (
+        <CSSTransition classNames="friend" timeout={300} key={index}>
+          <div>{item}</div>
+        </CSSTransition>
+      )
+    })}
+  </TransitionGroup>
+</div>
+```
