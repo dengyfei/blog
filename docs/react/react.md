@@ -272,6 +272,8 @@ class App extends React.Component {
 
 在类组件的`constructor函数`中，`this.state`对象用来维护组件内的状态的。在开发中，如果我们直接修改`state`，React 内部并不能检测到状态发生了变化，也就不会重新渲染界面。因此，React 推荐我们使用`setState函数`修改状态。`setState函数`并不需要我们定义，它是`React.Component`中的方法。
 
+为什么 React 当中要使用 setState 呢？因为 React 并没有像 Vue 那样实现双向绑定和数据劫持，所以 React 并不知道什么时候执行 render 函数将虚拟 DOM 同步成真实 DOM。所以，这个时候需要我们自己来调用 setState 函数通知 React 执行 render 函数。
+
 :::tip
 setState 内部完成了两件事情：1、改变 state 对象，2、自动执行 render 函数
 :::
@@ -1189,6 +1191,86 @@ export default class app extends Component {
       <ThemeProvider theme={{ color: 'red', fontSize: '20px' }}>
         <DivStyle>hello react</DivStyle>
       </ThemeProvider>
+    )
+  }
+}
+```
+
+## 添加 class
+
+由于 class 是 JavaScript 中的关键字，所以 react 中是通过给 className 传递一个字符串来添加类名的。
+
+```jsx
+export class app extends Component {
+  constructor() {
+    super()
+    this.state = {
+      isbbb: true,
+    }
+  }
+  render() {
+    const { isbbb } = this.state
+    const classList = ['aaa']
+    if (isbbb) classList.push('bbb)
+    const classname = classList.join(' ')
+    return (
+      <div>
+
+        {/*写法一*/}
+        <h2 className="aaa">hello react</h2>
+
+        {/*写法二*/}
+        <h2 className={isbbb ? 'bbb' : ''}>hello world</h2>
+
+        {/*写法三*/}
+        <h2 className={`aaa ${isbbb ? 'bbb' : ''}`}>hello heihei</h2>
+
+        {/*写法四*/}
+        <h2 className={classname}>hello haha</h2>
+      </div>
+    )
+  }
+}
+```
+
+对于简单的类名而言，上面的写法足够了，但是如果一个元素的有许多动态类，那么在这个元素上会写许多的三元运算，这样对于后期的维护肯定是不友好的。这个时候我们可以使用一个第三方库：[classnames](https://github.com/JedWatson/classnames)
+
+**安装**
+
+```js
+yarn add classnames
+```
+
+**引入**
+
+```js
+import classNames from 'classnames'
+```
+
+:::tip
+引入的 classNames 是一个函数，这个函数接收的参数可以是字符串、对象、数组，当然也可以是这几种数据类型的混合。用的最多的还是传一个对象。这个函数的返回值是一个字符串
+:::
+
+**使用**
+
+```jsx
+import React, { PureComponent } from 'react'
+import classNames from 'classnames'
+
+export default class app extends PureComponent {
+  constructor() {
+    super()
+    this.state = {
+      isActive: true,
+    }
+  }
+  render() {
+    return (
+      <div>
+        <h2 className={classNames({ active: this.state.isActive }, 'title')}>
+          我是标题
+        </h2>
+      </div>
     )
   }
 }
