@@ -11,7 +11,7 @@ module.exports = [
       {
         text: 'React',
         items: [
-          { text: 'React基础', link: '/react/react' },
+          { text: 'React基础', link: '/frame/react/react/react' },
           { text: 'Redux', link: '/frame/react/redux/redux' },
         ],
       },
@@ -21,7 +21,7 @@ module.exports = [
     text: '前端基础',
     icon: 'reco-faq',
     items: [
-      { text: 'css', link: '/css/sass' },
+      { text: 'css', link: '/basic/css/sass' },
       { text: 'webpack', link: '/basic/webpack/webpack' },
     ],
   },
