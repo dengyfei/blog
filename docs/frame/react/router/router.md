@@ -50,7 +50,7 @@ history 模式利用了 html5 中`history.pushState`和`history.replaceState`两
 
 ## react-router v5
 
-react-router 是完整的 react 的路由解决方案，它保持 UI 与 URL 的同步。目前使用的最多的是 v5.x 和 v6.x 两个版本，且两个版本的 API 发生了比较大的变动，本文主要介绍 v5.x 版本的使用。
+react-router 是 react 的路由解决方案，它保持 UI 与 URL 的同步。目前使用的最多的是 v5.x 和 v6.x 两个版本，且两个版本的 API 发生了比较大的变动，本文主要介绍 v5.x 版本的使用。
 
 ### 组件
 
@@ -92,7 +92,7 @@ location / {
 
 - path 属性：用于设置匹配到的路径
 - exact 属性：精准匹配，只有精准匹配到完全一致的路径，才会渲染对应的组件，默认为 false，即，模糊匹配。
-- component 属性：设置匹配到路径后，渲染的组件。注意，component 中不能写 jsx 语法，直接传递组件的类即可。通过 component 构建的组件，React 会自动创建并且传递参数。
+- component 属性：设置匹配到路径后，渲染的组件。注意，component 中不能写 jsx 语法，直接传递组件的类名即可。通过 component 构建的组件，React 会自动创建并且传递参数。
 
 :::tip
 React 会主动向 component 中传递三个参数，可以在组件中通过 props 获取。

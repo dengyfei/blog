@@ -10,7 +10,7 @@ categories:
 ::: tip
 :star:前言
 
-React 作为和 Vue、Angular 并驾齐驱的前端三大主流框架之一，其地位自然不言而喻。React 一直站在前端技术前沿，引领着前端发展。很多大厂都选择使用 React 作为日常开发的框架，很多程序员也都偏爱 React，主要原因在于 React 使用的 JSX(一种酷似 JavaScript 的语言)编写，导致 React 的灵活性是其他两大框架所无法匹敌的。而且 Vue 和 Angular 中很多的思想都是借鉴 React。所以，每个致力于献身前端事业的小伙伴都是有必要了解 React 的。
+React 作为和 Vue、Angular 并驾齐驱的前端三大主流框架之一，其地位自然不言而喻。React 一直站在前端技术前沿，引领着前端发展。很多大厂都选择使用 React 作为日常开发的框架，很多程序员也都偏爱 React，主要原因在于 React 使用的是 JSX(一种酷似 JavaScript 的语言)编写，导致 React 的灵活性是其他两大框架所无法匹敌的。而且 Vue 和 Angular 中很多的思想都是借鉴 React。所以，每个致力于献身前端事业的小伙伴都是有必要了解 React 的。
 :::
 
 ## 初识 React
@@ -55,16 +55,16 @@ React 作为和 Vue、Angular 并驾齐驱的前端三大主流框架之一，�
 
 ### 声明式编程
 
-React 使用的式声明式编程，虚拟 DOM 帮助我们从命令式编程转到声明式编程的模式。
+React 使用的是声明式编程，而虚拟 DOM 帮助我们从命令式编程转到声明式编程的模式。
 
-Virtual DOM(虚拟 DOM)是一种编程理念，UI 是以一种理想化或者说虚拟化的方式保存在内存中的，并且它是一个相当简单的 JavaScript 对象。我们可以通过`root.render`让虚拟 DOM 和真实 DOM 同步起来，这个过程称为协调。
+Virtual DOM(虚拟 DOM)是一种编程理念，UI 是以一种理想化或者说虚拟化的方式保存在内存中的，并且它是一个相对简单的 JavaScript 对象。我们可以通过`root.render`让虚拟 DOM 和真实 DOM 同步起来，这个过程称为协调。
 
 **React 渲染的整个流程：**
 首先我们编写的 jsx 代码会被 babel 解析成 React Element 对象，这就是虚拟 DOM，虚拟 DOM 实质就是普通的 JavaScript 对象。然后 react 会通过调用`root.render`函数让虚拟 DOM 同步为真实 DOM。
 
 ## 启动项目
 
-React 使用的脚手架是`create-react-app`，并且默认使用`yarn`作为包管理工具。因此，开发前我们需要执行以下命令在全局安装这两个工具：
+实际项目开发中我们都会使用脚手架构建项目，比如 Vue 的 Vue-CLI， 而 React 使用的脚手架是`create-react-app`，并且默认使用`yarn`作为包管理工具(React18 改成了 npm)。因此，开发前我们需要执行以下命令在全局安装这两个工具：
 
 ```js
 npm install -g yarn
@@ -120,8 +120,12 @@ const root = ReactDOM.createRoot(document.getElementById('root'))
 root.render(<App />)
 ```
 
-可以看到，`src/index.js`中只做了一件事，就是将 App 组件挂到了`id = root`的 DOM 元素上，接下来我们要做的，就是在 APP 组件中开发定制功能。
-而在 React 中，组件可以使用类和函数的方式开发。
+可以看到，`src/index.js`中只做的事情很简单：
+
+- 基于`id = root`的 DOM 元素创建一个根，
+- 调用 render 方法，将虚拟 DOM 协调成真实 DOM
+
+接下来我们要做的，就是在 APP 组件中开发定制功能，而在 React 中，组件可以使用类和函数的方式开发。
 
 ## 组件化开发
 
@@ -270,7 +274,7 @@ class App extends React.Component {
 
 ## 状态管理
 
-在类组件的`constructor函数`中，`this.state`对象用来维护组件内的状态的。在开发中，如果我们直接修改`state`，React 内部并不能检测到状态发生了变化，也就不会重新渲染界面。因此，React 推荐我们使用`setState函数`修改状态。`setState函数`并不需要我们定义，它是`React.Component`中的方法。
+在类组件的`constructor函数`中，`this.state`对象被用来维护组件内的状态。在开发中，如果我们直接修改`state`，React 内部并不能检测到状态发生了变化，也就不会调用组件内部的 render 函数重新渲染界面。因此，React 推荐我们使用`setState函数`修改状态。`setState函数`并不需要我们定义，它是`React.Component`中的方法。
 
 为什么 React 当中要使用 setState 呢？因为 React 并没有像 Vue 那样实现双向绑定和数据劫持，所以 React 并不知道什么时候执行 render 函数将虚拟 DOM 同步成真实 DOM。所以，这个时候需要我们自己来调用 setState 函数通知 React 执行 render 函数。
 
@@ -300,7 +304,7 @@ export default class app extends Component {
 }
 ```
 
-此时界面上依然展示的是 tom，而不是 jake
+此时界面上依然展示的是 tom，而不是 jake，因为 React 并不知道此时的状态已然发生了改变，所以就不会执行 render 函数将虚拟 DOM 协调为真实 DOM。
 
 ```jsx
 import React, { Component } from 'react'
@@ -321,7 +325,7 @@ export default class app extends Component {
 }
 ```
 
-此时界面上显示的是 jake
+setState 函数在改变状态之后会调用组件内部的 render 函数，因此此时界面上显示的是 jake。
 
 ### setState 是异步更新的
 
@@ -364,7 +368,7 @@ setState 设置为异步的原因
 :::
 但如果 setState 是异步的，我们什么时候才能获取到更新后的状态呢？这里提供两种方案。
 
-**通过回调函数** 前面提到过 setState 接收的第二个参数，这个参数需要传一个函数，并且在这个函数当中是可以获取到组件更新后的状态的。上面的代码如果这样写，就可以获取到最新的值
+**通过回调函数。** 前面提到过 setState 接收的第二个参数，这个参数需要传一个函数，并且在这个函数当中是可以获取到组件更新后的状态的。上面的代码如果这样写，就可以获取到最新的值
 
 ```jsx
 changeName () {
@@ -379,11 +383,11 @@ changeName () {
   }
 ```
 
-**通过生命周期函数** 在 react 中，组件的状态更新后，都会立马调用`componentDidUpdate`的[生命周期函数](#1)，在这个函数中也可以获取到组件本次更新的状态
+**通过生命周期函数。** 在 react 中，组件的状态更新后，都会立马调用`componentDidUpdate`[生命周期函数](#1)，在这个函数中也可以获取到组件本次更新的状态
 
 ### setState 数据的合并
 
-上面例子中，我们通过 setState 更新组件状态时，传给了 setState 一个`{name: jake}` 的参数，参数里面并没有包含 age 属性，但是更新后的状态里面依旧包含了 age 属性。我们把 setState 的这种特性称为 **setState 的数据合并。**
+上面例子中，我们通过 setState 更新组件状态时，传给了 setState 一个`{name: jake}` 的参数，参数里面并没有包含 age 属性，但是更新后的状态里面依旧包含了 age 属性。我们把 setState 的这种特性称为 **setState 的数据合并。** setState 数据合并的特性允许我们在调用 setState 函数的时候只需要传入本次需要更改的属性，而无需传入整个对象。
 
 那么为什么会有这种特性呢？这还得从 react 源码分析。react 在执行 setState 时，最后会通过`Object.assign`来合并数据的。比如上面的代码，react 内部最后会执行
 
@@ -391,7 +395,7 @@ changeName () {
 return Object.assign({}, this.state, { name: 'jake' })
 ```
 
-这样，返回的对象中就包含了`this.state`中的所有属性。
+这样，返回的对象中就既包含了`this.state`中的所有属性，也包含了本次更新的属性。
 
 ### setState 的合并
 
@@ -433,6 +437,7 @@ Object.assign({}, preState, nextProps)
 ```
 
 如此一来，当多个 setState 连续，且传入的对象的属性是一样的时候，只会执行最后一个 setState 中的改变。
+
 那么有没有一种办法不让连续的多个 setState 函数合并呢？当然是有的。之前提到过，setState 函数的第一个参数也可以是一个函数，这个函数接收两个参数，第一个是 state，表示上一次的状态；第二个参数是 props。
 ::: tip
 当 setState 传入的是一个函数时，react 内部就会依次执行每一个 setState 函数了
@@ -501,7 +506,7 @@ increment() {
 
 - 挂载阶段(Mounting)：首先 react 会调用构造函数初始化状态，然后依次经历 getDerivedStateFromProps、render 函数并更新 DOM 节点和 refs，最后调用 componentDidMount 钩子
 
-* 更新阶段(Updating)：当改变传入组件的 props 或者调用 setState 函数时，显示通过 getDerivedStateFromProps，获取更新前后的 props 和 state，在 shouldComponentUpdate 钩子中判断更新前后的 props 和 state 是否发生变化，如果发生了变化，则更新界面，并执行 componentDidUpdate 钩子，否则，不刷新界面。
+* 更新阶段(Updating)：当改变传入组件的 props 或者调用 setState 函数时，先是通过 getDerivedStateFromProps，获取更新前后的 props 和 state，在 shouldComponentUpdate 钩子中判断更新前后的 props 和 state 是否发生变化，如果发生了变化，则更新界面，并执行 componentDidUpdate 钩子，否则，不刷新界面。
 
 * 卸载阶段(Unmounting)：直接执行 componentWillUnmount 钩子，然后卸载组件。
   :::
