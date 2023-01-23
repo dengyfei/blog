@@ -101,6 +101,34 @@ npm run build
 当执行 webpack 命令时，webpack 会通过 commonjs 的方式读取这个配置，因此，在配置文件中，我们也需要通过 commonjs 的方式导出一个对象
 :::
 
+### 上下文 context
+
+context 的配置必须使用绝对路径，用于从配置中解析入口点(entry point)和 加载器(loader)。即，entry 和 loader 配置中的相对路径都是相对于 context 配置而言的。
+
+Webpack 设置 context 默认值源码为:
+
+```js
+this.set('context', process.cwd())
+```
+
+process.cwd()获取的是 webpack 的运行目录(等同于 package.json 所在路径)。
+
+我们可以通过配置项改变 context 的值：
+
+```js
+module.exports = {
+  context: path.resolve(__dirname, 'app'),
+}
+```
+
+当然也可以通过在 package.json 中传递参数更改：
+
+```js
+{
+  "build": "webpack --context ./app"
+}
+```
+
 ### 入口及出口配置
 
 ```js
@@ -469,4 +497,178 @@ url-loader 和 file-loader 的作用是相似的。它可以将文件转成 base
 }
 ```
 
-此时，无需另外配置 file-loader
+如果文件大于该阈值，会自动的交给 file-loader 处理，因此，无需另外配置 file-loader。
+
+### vue-loader
+
+**安装**
+
+```js
+// vue-template-compiler的作用是帮助我们解析template标签
+
+npm install vue-loader vue@2 vue-template-compiler -D
+```
+
+**配置**
+
+```js
+// index.js
+
+import App from './app.vue'
+import Vue from 'vue'
+
+new Vue({
+  render: (h) => h(App),
+}).$mount('#app')
+```
+
+```js
+// webpack.config.js
+
+const VueLoaderPlugin = require('vue-loader/lib/plugin')
+module.exports = {
+  ……
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+      },
+      {
+        test: /\.jsx?$/,
+        loader: 'babel-loader',
+      },
+      {
+        test: /\.vue$/,
+        loader: 'vue-loader',
+      },
+    ],
+  },
+  plugins: [new VueLoaderPlugin()],
+}
+```
+
+### 自定义 loader
+
+loader 本质上是导出一个函数的 JavaScript 模块，webpack 在解析过程中，loader runner 库会调用这个函数，然后将上一个 loader 产生的结果或资源文件传入进去。
+
+**自定义 Loader 过程：**
+
+1、新建一个 loaders 文件夹，并在文件夹下新建 my-loader.js 文件。
+
+my-loader.js 模块导出一个函数，该函数接收三个参数：
+
+- content：资源文件的内容
+
+- map：sourcemap 相关的数据
+
+- meta：一些元数据
+
+这个函数必须有返回值，且返回值必须是一个字符串或者 buffer
+
+```js
+module.exports = function (content) {
+  console.log(content)
+  return content
+}
+```
+
+2、webpack.config.js 文件中使用。
+
+```js
+module.export = {
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        loader: './loaders/my-loader.js', //使用的是相当路径，相对于前面介绍的context路径
+      },
+    ],
+  },
+}
+```
+
+我们在自定义中暴露出来的这个函数称为：NormalLoader，其实 loader 中还存在另外一个函数，称为：PitchLoader。
+
+```js
+// NormalLoader
+module.exports = function (content) {
+  console.log(content)
+  return content
+}
+
+// PitchLoader
+module.exports.pitch = function () {
+  console.log('pitch loader')
+}
+```
+
+前面我们介绍过，Loader 的执行顺序是从后往前的，这其实指的是 NormalLoader 的执行顺序，而 PitchLoader 的执行顺序是从前往后的，并且 PitchLoader 会先于 NormalLoader 执行。
+
+原因在于 loader runner 在执行 loader 时，会维护一个 loaderIndex 的变量，就是 loader 数组的下标。在 Pitching 阶段，会挨个执行 PitchLoader 函数，它会执行 loaderIndex++，直至最后一个，执行完 PitchLoader 后，进入到 Normal 阶段，他又会执行 loaderIndex-- 的操作，然后一个个执行 NormalLoader。
+
+### enforce 属性
+
+虽然说 loader 的默认执行顺序是从后往前的，但是我们也可以更改 loader 的执行顺序。我们可以拆分成多个 rule，然后通过 enforce 来决定它们执行的顺序。
+
+enforce 有四个值可选：normal(默认)、inline(行内)、pre、post
+
+:::tip
+执行顺序：
+
+pitching 阶段： post、inline、normal、pre
+
+normal 阶段：pre、normal、inline、post
+:::
+
+```js
+module.export = {
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        loader: 'loader1',
+      },
+      {
+        test: /\.js$/,
+        loader: 'loader2',
+        enforce: 'pre',
+      },
+      {
+        test: /\.js$/,
+        loader: 'loader3',
+      },
+    ],
+  },
+}
+//执行顺序 loader2 --> loader3 --> loader1
+```
+
+## resolveLoader 属性
+
+resolveLoader 属性其实是 resolve 属性的一个简化版，只不过这个简化版只适用于 loader 的配置。
+
+我们在使用自定义 loader 时，传入的是一个相对路径，当我们有很多自定义 loader 时，每一个都要写很长的一段路径，这样就过于冗余了。resolveLoader 就可以帮我们直接去加载自己的 loaders 文件夹。
+
+```js
+module.export = {
+  resolveLoader: {
+    modules: ['node_modules', 'loaders'], //先去node_modules中找，找不到了就去loaders文件夹下找
+  },
+}
+```
+
+经过 resolveLoader 属性配置后，前面自定义 loader 就可以用以下方式引入：
+
+```js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.js/,
+        loader: 'my_loader',
+      },
+    ],
+  },
+}
+```
