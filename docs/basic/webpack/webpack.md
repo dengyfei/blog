@@ -607,6 +607,100 @@ module.exports.pitch = function () {
 
 原因在于 loader runner 在执行 loader 时，会维护一个 loaderIndex 的变量，就是 loader 数组的下标。在 Pitching 阶段，会挨个执行 PitchLoader 函数，它会执行 loaderIndex++，直至最后一个，执行完 PitchLoader 后，进入到 Normal 阶段，他又会执行 loaderIndex-- 的操作，然后一个个执行 NormalLoader。
 
+### 向自定义 loader 中传入参数
+
+前面介绍过，loader 的本质就是导出一个函数的模块，既然是这样，那么我们是不是可以向这个函数内部传入参数呢？当然也是可以的。
+
+```js
+module.exports = {
+  ……
+  rules: [
+    {
+      test: /\.js$/,
+      loader: './loaders/my_loader.js',
+      options: {
+        name: 'xiaodeng',
+        age: 27
+      }
+    }
+  ]
+}
+```
+
+```js
+module.exports = function (content) {
+  // 获取参数
+  const options = this.getOptions()
+  console.log(options)
+  return content
+}
+```
+
+除此之外，我们还可以对传入函数的参数进行校验，这里我们需要借助 webpack 官方给我们提供的一个校验库：schema-utils
+
+1、安装
+
+```js
+npm i schema-utils -D
+```
+
+2、新建一个 schema.json 文件
+
+```json
+{
+  "type": "object", //参数类型
+  "properties": {
+    "name": {
+      "type": "string", //name字段类型
+      "description": "请输入姓名" //报错时的提示
+    },
+    "age": {
+      "type": "number",
+      "description": "请输入年龄"
+    }
+  }
+}
+```
+
+2、在导出函数中进行参数校验
+
+```js
+const { validate } = require('schema-utils')
+const loaderSchema = require('../schema.json')
+
+module.exports = function (content) {
+  const options = this.getOptions()
+  validate(loaderSchema, options)
+  return content
+}
+```
+
+### 同步 loader 和异步 loader
+
+**同步 loader：**
+
+默认创建的 loader 都是同步的 loader，这个 loader 必须通过 return 或者 this.callback 将返回结果交给下一个 loader 来处理。通常在有错误的情况下，我们会使用 this.callback 返回。this.callback 接受：第一个参数必须是 Error 或者 null，第二个参数是一个 string 或 buffer。
+
+```js
+module.exports = function (content) {
+  this.callback(null, content)
+}
+```
+
+**异步 loader：**
+
+有时候我们使用 loader 时会进行一些耗时的异步操作，我们希望在异步操作完成后，再返回这个 loader 处理的结果，这个时候，我们就需要使用异步的 loader 了。方法很简单，只需调用一下 this.async 方法就可以了，这个方法会返回一个 callback。
+
+```js
+module.exports = function (content) {
+  const callback = this.async()
+  setTimeout(() => {
+    console.log(content)
+    callback(null, content)
+  }, 1000)
+}
+```
+
 ### enforce 属性
 
 虽然说 loader 的默认执行顺序是从后往前的，但是我们也可以更改 loader 的执行顺序。我们可以拆分成多个 rule，然后通过 enforce 来决定它们执行的顺序。
@@ -644,7 +738,7 @@ module.export = {
 //执行顺序 loader2 --> loader3 --> loader1
 ```
 
-## resolveLoader 属性
+### resolveLoader 属性
 
 resolveLoader 属性其实是 resolve 属性的一个简化版，只不过这个简化版只适用于 loader 的配置。
 
@@ -670,5 +764,343 @@ module.exports = {
       },
     ],
   },
+}
+```
+
+## asset modules
+
+在 webpack5 之前，加载某些资源我们需要使用一些 loader，比如 raw-loader 、url-loader、file-loader； 而在 webpack5 之后，我们可以直接使用资源模块类型（asset module type），来替代上面的这些 loader。
+
+资源模块类型(asset module type)通过添加 4 种新的模块类型，来替换所有这些 loader：
+
+**asset/resource：** 发送一个单独的文件并导出 URL。之前通过使用 file-loader 实现；
+
+**asset/inline：** 导出一个资源的 data URI。之前通过使用 url-loader 实现；
+
+**asset/source：** 导出资源的源代码，前通过使用 raw-loader 实现。
+
+**asset：** 在导出一个 data URI 和发送一个单独的文件之间自动选择。之前通过使用 url-loader，并且配置资源体积限制实现，默认 8k 以下文件大小采用 asset/inline，8k 以上使用 asset/resource。
+
+```js
+const el = document.createElement('img')
+el.src = require('./assets/img/icon.jpeg')
+document.body.appendChild(el)
+```
+
+```js
+//asset/resource
+{
+	test: /\.(png|jpe?g|gif|svg)$/,
+    type: 'asset/resource',                      //选择资源类型模块
+    generator: {
+       filename: 'assets/img/[name].[hash:6][ext]'      //定义打包后图片放置的位置,注意此时[ext]包括了符号.
+    }
+}
+
+//asset/inline
+{
+	test: /\.(png|jpe?g|gif|svg)$/,
+    type: 'asset/inline',             //会把图片转成base64位嵌进去，因此不用generator来定义图片位置
+}
+
+//asset
+{
+	test: /\.(png|jpe?g|gif|svg)$/,
+    type: 'asset',
+    generator: {
+       filename: 'assets/img/[name].[hash:6][ext]'
+    },
+    parser: {
+        dataUrlCondition: {
+            maxSize: 100 * 1024    //配置100k以下使用asset/inline，100k以上使用asset/resource
+        }
+    }
+}
+```
+
+除了图片，其他的一些资源，比如字体文件，文本文件等都可以采用 asset modules type 的方式来处理。
+
+```js
+{
+  test: /\.(ttf|eot|woff2?$)/i,
+  type: 'asset/resource'         //字体文件一般是直接复制，不使用base64位
+}，
+{
+  test: /\.txt/,
+  type: 'asset/source'          //将文本转成字符串插入
+}
+```
+
+## browserslist
+
+在开发过程中，我们经常会碰到浏览器兼容性问题，比如有的浏览器兼容 ES6 语法，有的浏览器却不兼容；某些 css 特性，尤其是一些最新通过的 css 特性，也并不是所有浏览器都支持。因此为了保证用户在不同浏览器均可以访问我们写的代码，我们就需要通过各种工具来实现浏览器间的兼容性。比如 Autoprefixer 可以帮助我们给某些 css 特性自动添加前缀以实现浏览器兼容，babel 可以帮助我们实现 js 在浏览器间的兼容。但是我们并不知道什么时候要使用 Autoprefixer 和 babel 来转换我们的代码以适配对应浏览器，Browserslist 就是一个这样的工具，它提供需要在多个不同前端工具(Autoprefixer、babel 等)之间共享的配置，并且根据这些配置查询需要适配的浏览器。
+
+由于 webpack 本身就依赖了 browserslist，所以当我们使用 webpack 构建项目时，无需重新下载安装，直接配置即可。
+
+**配置：**
+
+在根目录下新建一个`.browserslistrc`文件，并做如下配置：
+
+```js
+>1%                   //只兼容市场占有率超过1%的浏览器，去caniuse网站中寻找
+last 2 version       //只兼容每个浏览器的最后2个版本
+not dead            //只兼容24个月内官方依旧支持或更新的浏览器
+```
+
+当然，我们也可以在 package.json 当中新增一个 browserslist 属性来配置 browserslist：
+
+```json
+"browserslist": [
+  ">1%",
+  "last 2 version",
+  "not dead"
+]
+```
+
+我们配置的每一项，如`>1%`，称为查询条件，而多个条件的组合称为组合查询，那么组合查询中每个查询条件的关系是如何的呢？见下图：
+
+<div style="text-align: center">
+<img src="./img/query_combiner.png" />
+</div>
+
+## PostCSS
+
+PostCSS 是一个通过 JavaScript 插件来转换样式的工具；这个工具可以帮助我们进行一些**CSS 的转换和适配**，换句话说 PostCSS 的功能就是处理 css 的兼容性问题。比如自动添加浏览器前缀、css 样式的重置；但是实现这些工具，我们需要借助于 PostCSS 对应的插件。
+:::tip
+PostCSS 是依据`.browserslistrc`文件中所限定的浏览器来适配的。
+:::
+
+PostCSS 是一个允许使用 JS 插件转换样式的工具。 这些插件可以检查编写的 CSS， 编译那些尚未被对应浏览器所支持的先进 CSS 语法和特性、内联图片、以及其它很多优秀的功能。
+
+**安装**
+
+postcss-loader 是为了在 webpack 中使用 postcss，所以需要同时安装 postcss-loader 和 postcss
+
+```js
+npm i postcss-loader postcss -D
+```
+
+PostCSS 接收一个 CSS 文件并提供了一个 API 来分析、修改它的规则（通过把 CSS 规则转换成一个抽象语法树的方式）。在这之后，这个 API 便可被许多插件利用来做有用的事情。因此我们需要配置许多的 PostCSS 插件来帮助我们完成 CSS 适配，比如寻错或自动添加 CSS vendor 前缀。
+
+但是针对不同的浏览器可能需要配置不同的 PostCSS 插件，而且对于同一浏览器中的不同 CSS 特性也需要不同的 PostCSS 插件来转换，这样就会导致 PostCSS 的配置非常的庞大且难以维护。
+
+此时，我们还需要安装一个 postcss 插件：**postcss-preset-env**。它可以帮助我们将一些现代化的 css 特性转成大多数浏览器都能识别的特性，并且能够根据目标浏览器或者运行环境添加所需的 polyfill。
+
+```js
+npm i postcss-preset-env
+```
+
+**配置：**
+
+```js
+module.exports = {
+  ……
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        loader: [
+          'style-loader',
+           'css-loader',
+           {
+            loader: 'postcss-loader',
+            options: {
+              // 配置postcss插件
+              postcssOptions: {
+                plugins: ['postcss-preset-env']
+              }
+            }
+           }
+        ]
+      }
+    ]
+  }
+}
+```
+
+但是，这样配置只会转换 css 文件，而不会转换 less 或者 sass 文件。如果在 less 和 sass 中配置同样的配置，就会重复许多配置代码。因此在项目开发中，一般会进行下面操作：
+
+1、在根目录下新建一个 postcss.config.js 文件，配置如下：
+
+```js
+module.exports = {
+  plugins: [require('postcss-preset-env')],
+}
+```
+
+2、配置 webpack.config.js
+
+```js
+module.exports = {
+  ……
+  module: {
+    rules: [
+      {
+        test: /\.css$/,
+        loader: [
+          'style-loader',
+          {
+            loader: 'css-loader',
+            importLoaders: 1
+          },
+          'postcss-loader'
+        ]
+      },
+      {
+        test: /\.less$/,
+        loader: [
+          'style-loader',
+          {
+            loader: 'css-loader',
+            importLoaders: 2
+          },
+          'postcss-loader',
+          'less-loader'
+        ]
+      },
+    ]
+  }
+}
+```
+
+## Plugin
+
+Loader 是用于特定的模块类型进行转换，也就是说 loader 仅在特定模块加载时使用。
+
+Plugin 可以用于执行更加广泛的任务，目的在于解决 loader 无法实现的其他事。比如打包优化、资源管理、环境变量注入等；plugin 的类型都是一个个的类，它可以贯穿 webpack 整个生命周期。
+
+:::warning
+**插件本质上是一个构造函数，它的原型上必须有一个 apply 方法**。在 Webpack 初始化 compiler 对象之后会调用插件实例的 apply 方法，传入 compiler 对象。然后插件就可以在 compiler 上注册想要注册的钩子，Webpack 会在执行到对应阶段时触发注册事件。
+:::
+
+### CleanWebpackPlugin
+
+**作用：** 当我们重新打包时，会自动帮助我们删除上次打包生成的目录文件夹，
+
+```js
+npm i clean-webpack-plugin -D
+```
+
+**配置：**
+
+```js
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+module.exports = {
+  ……
+  plugins: [
+    new CleanWebpackPlugin()
+  ]
+}
+```
+
+:::tip
+该插件可以通过在 output 中配置`clean: true`来替换
+:::
+
+### HtmlWebpackPlugin
+
+在进行项目部署的时，是需要有对应的入口文件`index.html`；然而，通过 webpack 最终打包的 dist 文件夹中是没有`index.html文件`的。
+
+**HtmlWebpackPlugin**就是对 HTML 进行打包处理的插件，它可以通过 ejs 模块来自动生成一个 index.html 文件。
+
+```js
+npm i html-webpack-plugin -D
+```
+
+**配置：**
+
+```js
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+module.exports = {
+  ……
+  new HtmlWebpackPlugin()
+}
+```
+
+当然，我们也可以在 htmlWebpackPlugin 实例化的时候传入参数
+
+```js
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+module.exports = {
+  ……
+  new HtmlWebpackPlugin({
+    title: '小邓同学',                         // 打包后的index.html的标题标签
+    template: './public/index.html'           // 以public文件夹下的index.html为模板来打包
+  })
+}
+```
+
+```html
+<!-- public/index.html -->
+<!-- 通过ejs语法引入title -->
+<title><%= htmlWebpackPlugin.options.title %></title>
+```
+
+### DefinePlugin
+
+<div style="text-align: center; margin-top: 20px">
+<img src="./img/index_html.png"/>
+</div>
+
+上面是 vue 工程中`public/index.html`部分内容，其实 vue 也是基于这个文件生成打包后的 index.html 文件的。我们可以看到代码中会有一些类似这样的语法`<%= 变量 %>`，这个是 EJS 模块填充数据的方式。
+
+其中`<%= htmlWebpackPlugin.options.title %>` 即为之前我们在配置 HtmlWebpackPlugin 插件时配置的 title。但是另外的`<%= BASE_URL %>`会用到一个全局变量`BASE_URL`，但是我们没有配置这个变量，这个时候编译就会出错。
+
+**DefinePlugin**允许在编译时创建配置的**全局常量**，这是一个 webpack 内置的插件（不需要单独安装）。
+
+```js
+const {DefinePlugin} = require('webpack')
+module.exports = {
+  ……
+  plugins: [
+    new DefinePlugin({
+      BASE_URL: "'./'"        //注意写法，相当于const BASE_URL = './'
+    })
+  ]
+}
+```
+
+这个时候，就能读取到 BASE_URL 的值并正确编译了。
+
+### CopyWebpackPlugin
+
+我们知道，在 vue 的打包过程中，如果我们将一些文件放到 public 的目录下，那么这个目录会被复制到 dist 文件夹中，当然 index.html 除外，它是作为模板供`html-webpack-plugin`使用来生成 dist 文件夹下的 index.html。
+
+CopyWebpackPlugin 就可以完成这样的复制功能。
+
+```js
+npm i copy-webpack-plugin -D
+```
+
+**配置：**
+
+复制的规则在`patterns属性`中设置；
+
+**from：** 设置从哪一个源中开始复制；
+
+**to：** 复制到的位置，可以省略，会默认复制到打包的目录下；
+
+**globOptions：** 设置一些额外的选项，其中可以编写需要忽略的文件：
+
+- DS_Store：mac 电脑自动生成的一个文件；
+
+* index.html：也不需要复制，因为我们已经通过 HtmlWebpackPlugin 完成了 index.html 的生成；
+
+```js
+const CopyWebpackPlugin = require('copy-webpack-plugin')
+
+module.exports = {
+  ……
+  plugins: [
+    new CopyWebpackPlugin({
+      patterns: [
+        {
+          from: './public',
+          to: 'public',
+          globOptions: ['**/DS_Store：mac', '**/index.html']
+        }
+      ]
+    })
+  ]
 }
 ```
