@@ -1054,7 +1054,8 @@ module.exports = {
   ……
   plugins: [
     new DefinePlugin({
-      BASE_URL: "'./'"        //注意写法，相当于const BASE_URL = './'
+      BASE_URL: "'./'"，        //注意写法，相当于const BASE_URL = './'
+      BASE_PATH: JSON.stringify('./')   //另一种写法，同上面的效果一样
     })
   ]
 }
@@ -1102,5 +1103,261 @@ module.exports = {
       ]
     })
   ]
+}
+```
+
+### MiniCssExtractPlugin
+
+MiniCssExtractPlugin 可以帮助我们将 css 提取到一个独立的 css 文件中。
+
+```js
+npm i mini-css-extract-plugin -D
+```
+
+**配置：**
+
+```js
+const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+
+module.exports = {
+  ……
+  module: {
+    rules: [
+      {
+        test: /\.css/,
+        use: [ MiniCssExtractPlugin.loader, 'css-loader']       //单独分包
+      }
+    ]
+  },
+  plugins: [
+    new MiniCssExtractPlugin({
+      filename: 'css/[name].[contentHash:6].css'    //命名
+    })
+  ]
+}
+```
+
+:::tip
+**hash、contentHash、chunkHash 的区别：**
+
+**hash：** hash 值的生成和整个项目有关系，比如我们现在有两个入口 index.js 和 main.js ，它们分别会输出到不同的 bundle 文件中，并且在文件名称中我们有使用 hash ，这个时候，如果修改了 index.js 文件中的内容，那么 hash 会发生变化，那就意味着两个文件的名称都会发生变化。
+
+**chunkHash：** chunkhash 可以有效的解决上面的问题，它会根据不同的入口来解析生成 hash 值，比如我们修改了 index.js，那么 main.js 的 chunkhash 是不会发生改变的。但是由这个入口构成的依赖图上的其他文件名会跟随变化，也就是会重新打包。
+
+**contentHash：** contenthash 表示生成的文件 hash 名称，只和内容有关系。比如我们的 index.js，引入了一个 style.css ， style.css 又被抽取到一个独立的 css 文件中，这个 css 文件在命名时，如果我们使用的是 chunkhash ，那么当 index.js 文件的内容发生变化时，css 文件的命名也会发生变化，这个时候我们可以使用 contenthash。
+:::
+
+### CssMinimizerWebpackPlugin
+
+CssMinimizerWebpackPlugin 的作用是对 css 代码的压缩，通常是去除无用的空格等。
+
+```js
+npm i css-minimizer-webpack-plugin -D
+```
+
+```js
+const cssMinimizerPlugin = require('css-minimizer-webpack-plugin')
+module.exports = {
+  plugins: [new cssMinimizerPlugin()],
+}
+```
+
+### Scope Hoisting
+
+它的作用是对作用域进行提升，并且让 webpack 打包后的代码更小，运行更快。
+
+默认情况下 webpack 打包会有很多的函数作用域，包括一些(比如最外层的)IIFE。无论是从最开始的代码运行，还是加载一个模块，都需要执行一系列的函数，Scope Hoisting 可以将函数合并到一个模块中来运行。
+
+:::tip
+在 production 模式下，默认这个模块就会启用;
+
+在 development 模式下，我们需要自己来打开该模块;
+:::
+
+```js
+const webpack = require('webpack')
+
+module.exports = {
+  plugins: [new webpack.optimize.ModuleConcatenationPlugin()],
+}
+```
+
+### 自定义 Plugin
+
+#### Tapable 库
+
+webpack 有两个非常重要的类：Compiler 和 Compilation。他们通过注入插件的方式，来监听 webpack 的所有生命周期，插件的注入离不开各种各样的 Hook，而他们的 Hook 其实就是创建了 Tapable 库中的各种 Hook 的实例。
+
+在 Webpack 的编译过程中，本质上通过 Tapable 实现了在编译过程中的一种发布订阅者模式的插件 Plugin 机制。既然这样，我们就先来了解下 Tapable 的 hooks：
+
+<div style="text-align: center">
+<img src="./img/hooks.png"/>
+</div>
+
+上图描述的是 Tapable 中的 hooks。可以看出，大体分为同步 hooks 和异步 hooks 两种
+
+其他类别：
+
+- bail：当有返回值时，就不会执行后续事件的触发了;
+
+- Loop：当返回值为 true，就会反复执行该事件，当返回值为 undefined 或者不返回内容，就退出事件
+
+- Waterfall：当返回值不为 undefined 时，会将这次返回的结果作为下次事件的第一个参数
+
+- Parallel：并行，会同时执行多个事件处理回调;
+
+- Series：串行，会等待上一是异步的 Hook ;
+
+```js
+const { SyncHook } = require('tapable')
+
+class LearnTapable {
+  constructor() {
+    this.hooks = {
+      // 注册钩子
+      syncHook: new SyncHook(['name', 'age']),
+    }
+    // 监听事件
+    this.hooks.syncHook.tap('event1', (name, age) => {
+      console.log('event1', name, age)
+      return 111
+    })
+    this.hooks.syncHook.tap('event2', (name, age) => {
+      console.log('event2', name, age)
+    })
+  }
+  // 触发事件
+  emit() {
+    this.hooks.syncHook.call('xiaodeng', 27)
+  }
+}
+
+const lt = new LearnTapable()
+lt.emit()
+/**
+ * 输出：
+ * event1 xiaodeng 27
+ * event2 xiaodeng 27
+ */
+```
+
+```js
+const { AsyncParallelHook } = require('tapable')
+
+class LearnTapable {
+  constructor() {
+    // 注册钩子并传入参数
+    this.hooks = {
+      asyncParallelHook: new AsyncParallelHook(['name', 'age']),
+    }
+    // 事件注册方式一，代码执行完成后要调用callback函数
+    this.hooks.asyncParallelHook.tapAsync('event1', (name, age, callback) => {
+      setTimeout(() => {
+        console.log(name, age), callback()
+      }, 1000)
+    })
+
+    // 事件注册方式二
+    this.hooks.asyncParallelHook.tapPromise('event2', (name, age) => {
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          console.log(name, age)
+          resolve()
+        }, 500)
+      })
+    })
+  }
+  // 事件触发方式一，前面注册的两个事件均会被触发
+  emit1() {
+    this.hooks.asyncParallelHook.callAsync('xiaodeng', 27, () => {
+      console.log('event1 finish')
+    })
+  }
+  // 事件触发方式一，前面注册的两个事件均会被触发
+  emit2() {
+    this.hooks.asyncParallelHook.promise('xiaodeng', 26).then(() => {
+      console.log('event2 finish')
+    })
+  }
+}
+
+const lt = new LearnTapable()
+lt.emit1()
+lt.emit2()
+/**
+ * 输出：
+ * xiaodeng 27
+ * xiaodeng 26
+ * xiaodeng 27
+ * event1 finish
+ * xiaodeng 26
+ * event2 finish
+ */
+```
+
+#### 自定义 plugin
+
+首先要了解 plugin 是如何被注册到 webpack 生命周期的。
+
+1、在 webpack 函数的 createCompiler 方法中，注册了所有的插件；
+
+2、在注册插件时，会调用插件函数或者插件对象的 apply 方法;
+
+3、插件方法会接收 compiler 对象，我们可以通过 compiler 对象来注册 Hook 的事件;
+
+4、某些插件也会传入一个 compilation 的对象，我们也可以监听 compilation 的 Hook 事件;
+
+创建`src/plugins/autoUploadPlugin`文件，并编写如下代码：
+
+```js
+module.exports = class AutoUploadPlugin {
+  constructor(options) {
+    // 接收参数
+    this.options = this.options
+  }
+  // 声明apply方法
+  apply(compiler) {
+    /**
+     * 监听钩子，具体监听那个钩子，可根据业务在官网API处查找，此处监听afterEmit钩子
+     * 注册事件，事件名一般和插件名相同
+     * 参数也可以从官网获取，afterEmit钩子的参数就是compilation
+     */
+    compiler.hooks.afterEmit.tapAsync(
+      'AutoUploadPlugin',
+      (compilation, callback) => {
+        // 处理自己要做的事
+        console.log(111)
+        // 调用callback 函数
+        callback()
+      }
+    )
+  }
+}
+```
+
+```js
+// webpack.config.js
+
+const AutoUploadPlugin = require(./src/plugins/autoUploadPlugin)
+module.export = {
+  plugins: [
+    new AutoUploadPlugin(
+      {
+        参数： 值
+      }
+    )
+  ]
+}
+```
+
+## devtool
+
+我们的代码通常是通过**打包压缩**运行在浏览器上，这期间经过了丑化压缩和一些转换，因此当我们的代码出现问题时，我们是没有办法精确定位到某个文件的某个地方的。而 devtool 可以帮助我们将已转换的代码映射到原始的源文件中，使我们更好的排错。
+
+**配置 devtool**
+
+```js
+module.exports = {
+  devtool: 'source-map',
 }
 ```
