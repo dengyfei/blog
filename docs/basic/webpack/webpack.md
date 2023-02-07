@@ -1361,3 +1361,506 @@ module.exports = {
   devtool: 'source-map',
 }
 ```
+
+此时打包会多出一个`bundle.js.map`的 source-map 文件。
+
+而在打包后的文件最后结尾处，会多出如下语句：
+
+```js
+//# sourceMappingURL= bundle.js.map
+```
+
+上面语句的作用就是将打包压缩后的文件映射到源文件。
+
+:::tip
+当 webpack 的 mode=development 时，devtool=‘eval'，此时不会生成 source-map 文件，但是会通过 eval 函数映射到源文件，方便调试。
+
+当 webpack 的 mode=production 时，缺省值(不写)，此时不会生成 source-map 文件，也不会产生映射.
+:::
+
+### 值
+
+官方文档介绍 devtool 的值多达 26 种选择，不同的值有效果不同，打包时间、加载运行时间也会有所差异。但其实这 26 种可选值都是由以下几个短语拼凑而成，因此，只要明白这些短语的含义，就能选择性能较好的效果。
+
+inline：将`//# sourceMappingURL= bundle.js.map`放到文件的最后面，生成 sourc-map 文件
+
+hidden：隐藏`//# sourceMappingURL= bundle.js.map`注释，但会生成 sourc-map 文件
+
+eval: 将`//# sourceMappingURL= bundle.js.map`放到 eval 函数里面，不会生成 source-map 文件
+
+cheap： 低开销，只定位错误行，不定位错误列，会生成 suorce-map 文件
+
+module：如果有，则必须跟着 cheap 后面，表明对源自 loader 的 sourcemap 处理效果会更好
+
+:::warning
+推荐 devtool 的值：
+
+开发阶段：推荐使用 `source-map`或者`cheap-module-source-map`
+
+测试阶段：推荐使用 `source-map`或者`cheap-module-source-map`。测试阶段我们也希望在浏览器下看到正确的错误提示；
+
+发布阶段：false、缺省值（不写）
+:::
+
+## webpack 模块化原理
+
+前面介绍过，webpack 是一个静态的模块化打包工具。由于浏览器只认识 ES6 module 的模块化方式，不能识别诸如 commonjs、AMD 等其他模块化方式，而 webpack 就能够将其他模块化方式转换成浏览器能够识别的方式。接下来将介绍这部分的原理。
+
+### commonJS 转换原理
+
+假设有以下代码：
+
+```js
+// src/js/formatter.js
+
+const formate = function (date) {
+  return '2022-10-29'
+}
+
+module.exports = {
+  formate,
+}
+```
+
+打包后的 webpack 代码如下：
+
+```js
+// 定义一个对象， 对象中放的是模块映射
+var __webpack_modules__ = {
+  './src/js/formatter.js': function (module) {
+    const formate = function (date) {
+      return '2022-10-29'
+    }
+    //给module的exports属性赋值，值为模块中的内容,这里的module是后面定义并传入进来的。
+    module.exports = {
+      formate,
+    }
+  },
+}
+//定义一个对象，作为加载模块的缓存
+var __webpack_module_cache__ = {}
+//一个函数，当我们加载一个模块时，都会通过这个函数来加载
+function __webpack_require__(moduleId) {
+  // 从缓存中取出对应的模块
+  var cachedModule = __webpack_module_cache__[moduleId]
+  // 如果存在，直接返回
+  if (cachedModule !== undefined) {
+    return cachedModule.exports
+  }
+  // 将module和缓存赋值到同一个对象
+  var module = (__webpack_module_cache__[moduleId] = { exports: {} })
+  //执行上面定义的函数
+  __webpack_modules__[moduleId](module, module.exports, __webpack_require__)
+  return module.exports
+}
+
+var __webpack_exports__ = {}
+// 一个立即执行函数
+!(function () {
+  const { formate } = __webpack_require__('./src/js/formatter.js')
+  console.log(formate())
+})()
+```
+
+### es module 实现原理
+
+假设有以下代码：
+
+```js
+// src/math.js
+
+export function sum(a, b) {
+  return a + b
+}
+```
+
+webpack 打包后的代码如下：
+
+```js
+//定义一个对象，对象中放的是模块映射
+var __webpack_modules__ = {
+  './src/math.js': function (
+    __unused_webpack_module,
+    __webpack_exports__,
+    __webpack_require__
+  ) {
+    // 调用r的目的是记录一个__esModule: {value: true}
+    __webpack_require__.r(__webpack_exports__)
+    // 给exports设置代理了一个definition代理，exports本质上是没有对应函数的，只是通过代理取到
+    __webpack_require__.d(__webpack_exports__, {
+      sum: function () {
+        return sum
+      },
+    })
+    function sum(a, b) {
+      return a + b
+    }
+  },
+}
+//缓存
+var __webpack_module_cache__ = {}
+
+//require函数的实现(加载模块)
+function __webpack_require__(moduleId) {
+  var cachedModule = __webpack_module_cache__[moduleId]
+  if (cachedModule !== undefined) {
+    return cachedModule.exports
+  }
+  var module = (__webpack_module_cache__[moduleId] = { exports: {} })
+
+  __webpack_modules__[moduleId](module, module.exports, __webpack_require__)
+
+  return module.exports
+}
+
+!(function () {
+  //__webpack_require__这个函数对象添加了一个属性：d --》值为function
+  __webpack_require__.d = function (exports, definition) {
+    for (var key in definition) {
+      if (
+        __webpack_require__.o(definition, key) &&
+        !__webpack_require__.o(exports, key)
+      ) {
+        // 给exports设置代理，重写get函数
+        Object.defineProperty(exports, key, {
+          enumerable: true,
+          get: definition[key],
+        })
+      }
+    }
+  }
+})()
+
+!(function () {
+  //__webpack_require__这个函数对象添加了一个属性：o --》值为function
+  __webpack_require__.o = function (obj, prop) {
+    return Object.prototype.hasOwnProperty.call(obj, prop)
+  }
+})()
+
+!(function () {
+  //__webpack_require__这个函数对象添加了一个属性：r --》值为function
+  __webpack_require__.r = function (exports) {
+    if (typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+      Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' })
+    }
+    // 给传入进来的对象添加一个'esModule'属性，标明这是es module模块语法
+    Object.defineProperty(exports, '__esModule', { value: true })
+  }
+})()
+
+var __webpack_exports__ = {}
+!(function () {
+  // 调用__webpack_require__.r
+  __webpack_require__.r(__webpack_exports__)
+  // _math__WEBPACK_IMPORTED_MODULE_0__ === exports
+  var _math__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__('./src/math.js')
+
+  // console.log( _math__WEBPACK_IMPORTED_MODULE_0__.sum(20, 30))
+  console.log((0, _math__WEBPACK_IMPORTED_MODULE_0__.sum)(20, 30))
+})()
+```
+
+## webpack-dev-server
+
+webpack-dev-server 允许 webpack 搭建一个本地服务器。为什么需要搭建本地服务器？这是因为之前当我们改动打包后的代码时，需要重新打包才能看到我们改动后的效果，这个过程很影响开发效率。
+
+为了完成自动编译，webpack 提供了几种可选的方式：
+
+- webpack watch mode；
+- webpack-dev-server；
+- webpack-dev-middleware
+
+这里介绍前面两种方式：
+
+### webpack watch
+
+webpack 给我们提供了 watch 模式： 在该模式下，webpack 依赖图中的所有文件，只要有一个发生了更新，那么代码将被重新编译； 不需要我们再次手动去运行 npm run build 指令了。
+
+**方式一：使用指令**
+
+在终端中输入，或在 package.json 中配置脚本`webpack --watch`，这个时候就会启动 watch 模式。
+
+**方式二：配置文件**
+
+在`webpack.config.js`文件中配置`watch: true`
+
+```js
+module.exports = {
+  watch：true,
+  module: {……}
+}
+```
+
+watch 模式的缺点：
+
+1、一旦某个文件发生改变，所有的源代码都将重新进行编译
+
+2、编译成功后，都会重新生成 dist 包，然后再引入到 index.html 中，即进行文件操作
+
+3、每次都会重新刷新整个页面 （HMR 可以解决）
+
+因此该方法的开发效率其实并不算特别高。
+
+### webpack-dev-server
+
+**webpack-dev-server 的本质是通过 express 启动一个本地服务**，wds 是一个本地开发服务器，会自动监听变化，自动打包构建并将打包的结果暂时存放在内存中，而且自动刷新浏览器。
+
+- webpack-dev-server 本身也是一台运行在计算机内存中的服务器，具体是运行在根目录下的 public 目录中
+
+<div style="text-algin: center">
+<img src="./img/dev_server.png"/>
+</div>
+
+- 不会产生 dist 文件，把打包后的资源直接放到 webpack-dev-server 服务器下面，放到服务器的什么地方，就是由 publicPath 决定的，同时，它也决定了怎么才能访问这些资源。默认情况下，publicPath 的取值是 '/', 也就是说，会把打包后的文件放到 webpack-dev-server 服务器的根目录下，文件名是在 output 配置中的 filename. 如果配置了 publicPath，webpack-dev-server 会把所有的文件打包到 publicPath 指定的目录下，相当于在项目根目录下创建了一个 publicPath 目录, 然后把打包后的文件放到了里面，只不过我们看不到而已, 文件名还是 output 配置中的 filename。
+- 减少磁盘的读取，提高构建效率。
+
+**使用：**
+
+```js
+npm i webpack-dev-server -D
+```
+
+安装后在 package.json 脚本中做如下配置
+
+```js
+"serve": "webpack server"
+```
+
+:::warning
+webpack-dev-server 的优势在于，编译后不会写入任何输出文件，包括 dist 包，而是使用一个 memfs 第三方包将打包后的文件保留在内存中，然后直接从内存中读取文件。
+
+但是 wepack-dev-server 默认是没有启动模块热更新的。也就是说，**webpack-dev-server 默认还是会重新刷新整个页面**。
+:::
+
+### devServer 配置
+
+#### 模块热替换(HMR)
+
+HMR 的全称是`Hot Module Replacement`，翻译为模块热替换；模块热替换是指在应用程序运行过程中，只替换、添加、删除某个模块，而无需重新刷新整个页面。
+
+刷新我们一般分为两种：
+
+- 一种是页面刷新，不保留页面状态，就是简单粗暴，直接`window.location.reload()`。
+- 另一种是基于`WDS (Webpack-dev-server)`的模块热替换，只需要局部刷新页面上发生变化的模块，同时可以保留当前的页面状态，比如复选框的选中状态、输入框的输入等。
+
+**热替换的优势：**
+
+1、不重新加载整个页面，这样可以保留某些应用程序的状态不丢失；
+
+2、只更新需要变化的内容，节省开发的时间；
+
+3、修改了 css、js 源代码，会立即在浏览器更新，相当于直接在浏览器的 devtools 中直接修改样式。
+
+**HMR 的原理：**
+
+HMR 是如何可以做到只更新一个模块中的内容呢？
+
+`webpack-dev-server`在启动时会创建两个服务：提供静态资源的服务（express）和 Socket 服务（net.Socket）；其中 express server 负责在首次渲染时直接提供静态资源（打包后的资源直接被浏览器请求和解析）；
+
+而 HMR Socket Server，是一个 socket 的长连接：长连接有一个最大的好处在于建立连接后双方可以互相通信（即，服务器也可以直接发送文件到客户端）。当服务器监听到对应的模块发生变化时，会生成两个文件，`.json（manifest 文件）`和`.js 文件（update chunk）`；通过长连接，可以直接将这两个文件主动发送给客户端（浏览器）；浏览器拿到两个新的文件后，通过 HMR runtime 机制，加载这两个文件，并且针对修改的模块进行更新，具体过程如下图。
+
+<div style="text-algin: center">
+<img src="./img/HMR.svg"/>
+</div>
+
+:::tip
+webpack V5.x 版本 devServer.hot 的默认值就是 true，即默认开启热模块替换
+:::
+
+#### hotOnly
+
+源代码出错时，编译会失败，而当我们修改好错误，重新回到浏览器时，浏览器会自动刷新整个页面。如果我们不希望浏览器重新刷新整个页面，而仅仅是刷新出错的地方时，就需要配置`hotOnly:true`。
+
+```js
+module.exports = {
+  devServer: {
+    hot: true,
+    hotOnly: true,
+  },
+}
+```
+
+#### compress
+
+是否为静态文件开启 gzip 压缩，这回大大减少静态文件的大小，默认开启。
+
+#### proxy 代理
+
+```js
+module.exports = {
+  devServer: {
+    proxy: {
+      '/api': {
+        target: 'http://www.baidu.com',
+        pathRewrite: {
+          '^/api': '',
+        },
+        secure: false,
+        changeOrigin: true,
+      },
+    },
+  },
+}
+```
+
+proxy 是我们开发中非常常用的一个配置选项，它的值是一个对象，目的是通过设置代理来解决跨域访问的问题。
+
+我们可以进行如下的设置：
+
+- `target`：表示的是代理到的目标地址，比如` /api/moment`会被代理到`http://localhost:8888/api/moment`；
+
+- `pathRewrite`：重写路径，使用值去替换键，默认情况下，我们的 /api-hy 也会被写入到 URL 中，如果希望删除，可以使用 pathRewrite；
+
+- `secure`：默认情况下不接收转发到 https 的服务器上，如果希望支持，可以设置为 false； 默认为 true
+
+- `changeOrigin`：它表示是否更新代理后请求的 headers 中 host 地址，即 changeOrigin = true 时，后端接收到的请求头中的 host 是目标地址 target。
+
+上面例子中，我们的请求是需要通过`http://www.baidu.com`来发送的。但是，通过 proxy.target 配置后，只是做了个代理(映射)，实际仍然是通过`http://localhost:8000`发送请求的。如果服务器做了验证，发现不是由`http://www.baidu.com`发生的请求，就会发生跨域问题，它是不会返回数据的。当我们把 changeOrigin 设置为 true 时，它会在本地启动一个代理服务，这个代理服务就是`http://www.baidu.com`。请求首先由`http://localhost:8000`转发给代理服务`http://www.baidu.com`，再由代理服务转发到最终服务器上，就是同源的了。
+
+#### historyApiFallback
+
+当我们使用的路由模式是 history 时，如果我们直接刷新浏览器页面，是会返回 404 的。这是由于我们所有的路由跳转都是由前端完成的，而当我们刷新页面时，浏览器会去服务器请求路由，开发模式下就是是向本地的 dev-server 服务器请求，但是服务器并没有这个路由，因此就会返回 404。
+
+historyApiFallback 就是解决当服务器返回 404 时，我们可以直接映射到某个页面中。它可以是一个布尔值，也可以是一个对象。
+
+```js
+module.exports = {
+  devServer: {
+    // 直接映射到首页
+    historyApiFallback: true
+
+    // 指定具体映射页面
+    historyApiFallback: {
+      rewrite: [
+        {from: /^\/about/, to: 'index.html'}
+      ]
+    }
+  }
+}
+```
+
+## resolve 模块解析
+
+首先我们来认识 webpack 能解析的三种文件路径：
+
+- 绝对路径：由于已获得文件的绝对路径，因此不需要再进一步解析；
+- 相对路径：这种情况下，使用 import 或 require 的资源文件所处的目录会被认为是上下文目录；在 import/require 中给定的相对路径会拼接此上下文路径，从而生成模块的绝对路径；
+- 模块路径： 在 resolve.modules 中指定的所有目录检索模块；默认值是 ['node_modules']，所以默认会从 node_modules 中查找文件；我们可以通过设置别名的方式来替换初识模块路径，具体后面讲解 alias 的配置；
+
+**查找规则：**
+
+1、如果是一个文件且具有扩展名，则直接打包文件；否则，将使用 resolve.extensions 选项作为文件扩展名解析。
+
+2、如果是一个文件夹，会根据 resolve.mainFiles 配置选项中指定的文件顺序查找。`resolve.mainFiles`的默认值是 ['index']； 再根据`resolve.extensions`来解析扩展名。
+
+**常用配置：**
+
+- extensions: extensions 是解析到文件时自动添加扩展名，默认值为['.wasm', '.mjs', '.js', '.json']，所以如果我们代码中想要加载`.vue`、`jsx`或者`ts`等文件时，我们必须自己写上扩展名。
+- alias: 配置别名。特别是当我们项目的目录结构比较深，或者一个文件的路径可能需要`../../../`这种路径片段时，我们就可以给某些常见的路径起一个别名。
+
+```js
+module.exports = {
+  resolve: {
+    extensions: ['.wasm', '.mjs', '.js', '.json', '.vue'],
+    alias: {
+      '@': path.resolve('__dirname', './src'),
+    },
+    // 该配置告诉webpack，导入文件时，先去src下找，然后再去node_modules目录下找，默认为['node_modules']
+    modules: [path.resolve(__dirname, 'src'), 'node_modules'],
+  },
+}
+```
+
+值得注意的是，当我们代码中出现`import 'vue'`时，webpack 会采用向上递归搜索的方式去`node_modules`目录下找，最终找到`vue/dist/vue.runtime.esm.js`文件并引用。为了减少搜索范围，我们可以直接告诉 webpack 去哪个路径下查找，也就是别名(alias)的配置。
+
+```js
+alias: {
+  'vue$': 'vue/dist/vue.runtime.esm.js'
+}
+```
+
+## 配置文件的分离
+
+我们可以看到，前面我们在 webpack.config.js 中的配置其实有些是开发环境才需要的，有些又是针对生产环境配置的，有些又是两者都需要的通用配置项。所以当我们的配置项太多时，最好是将配置文件做一个分离，区分开来，后面也方便维护和管理。这里提供两种分离配置文件的方案。
+
+**方案一：编写两个不同的配置文件，开发和生产环境，分别加载不同的文件**
+
+1、在根目录下创建一个 config 文件夹，并在文件夹下创建`webpack.dev.js`和`webpack.prod.js`文件。
+
+2、将生产环境的配置项放入到`webpack.prod.js`文件中，将开发环境的配置项放入到`webpack.dev.js`文件中
+
+3、修改 package.json 中的打包命令如下，让生产和开发分别去找到对应的两个配置文件
+
+```js
+"script": {
+  "build": "webpack --config ./config/webpack.prod.js",
+  "serve": "webpack --config ./config/webpack.dev.js"
+}
+```
+
+**方案二：使用同一个入口配置文件，通过设置参数来区分它们**
+
+方案一完全区分了生产时和开发时的配置，其实不是很合理，因为很多配置项是我们生产和开发时都需要的通用配置。我们可以使用同一个入口配置文件，将通用的配置项放到这个文件中，然后通过设置参数来决定合并生产环境下配置或是开发环境下配置。
+
+1、在根目录下创建一个 config 文件夹，并在文件夹下创建`webpack.dev.js`、`webpack.prod.js`和`webpack.common.js`文件，将通用配置、开发环境配置、生产环境配置分别放至`webpack.common.js`、`webpack.dev.js`、`webpack.prod.js`文件中。
+
+2、修改`package.json`中的打包命令，并传递参数。
+
+```js
+"script": {
+  "build": "webpack --config ./config/webpack.common.js --env production",
+  "dev": "webpack --config ./config/webpack.common.js --env development"
+}
+```
+
+3、合并配置
+
+```js
+npm i webpack-merge -D
+```
+
+```js
+const { merge } = require('webpack-merge')
+const prodConfig = require('./webpack.prod.js')
+const devConfig = require('./webpack.dev.js')
+const commonConfig = {
+  //公共webpack配置项
+}
+module.exports = function (env) {
+  const isProduction = env.production
+  return isProduction
+    ? merge(commonConfig, prodConfig)
+    : merge(commonConfig, devConfig)
+}
+```
+
+## 代码分离
+
+webpack 默认会将所有依赖的文件打包输出到一个 bundle.js 中（单入口时），当应用程序逐渐复杂，这个 bundle.js 文件也会随之越来越大，浏览器加载 bundle.js 文件的速度也会越来越慢，此时就需要使用代码分割来将不同代码单独打包成不同 chunk 输出。
+
+**代码分离（Code Splitting）**是 webpack 一个非常重要的特性：它主要的目的是将代码分离到不同的 chunk 中，之后我们可以按需加载，或者并行加载这些文件。比如默认情况下，所有的 JavaScript 代码（业务代码、第三方依赖、暂时没有用到的模块）在首页全部都加载，就会影响首页的加载速度，代码分离可以拆分出更小的 chunk，以及控制资源加载优先级，提供代码的加载性能，缩短首屏渲染时间。
+
+webpack 中常用的代码分离有三种：
+
+- 入口起点：使用 entry 配置分离代码；
+- 防止重复：使用`Entry Dependencies`或者`SplitChunksPlugin`去重和分离代码；
+- 动态导入：通过模块的内联函数分离代码
+
+### 入口起点
+
+入口起点的含义非常简单，就是使用 entry 属性配置多个入口。比如，配置一个 index.js 和 main.js 的入口，它们分别有自己的代码逻辑。
+
+```js
+const path = require('path')
+module.exports = {
+  entry: {
+    main: './src/main.js',
+    index: './src/index.js'
+  },
+  output: {
+    filename: '[name].bundle.js',
+    path: path,resolve(__dirname, 'dist')
+  }
+}
+```
