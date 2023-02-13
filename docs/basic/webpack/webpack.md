@@ -1837,15 +1837,21 @@ module.exports = function (env) {
 
 ## 代码分离
 
-webpack 默认会将所有依赖的文件打包输出到一个 bundle.js 中（单入口时），当应用程序逐渐复杂，这个 bundle.js 文件也会随之越来越大，浏览器加载 bundle.js 文件的速度也会越来越慢，此时就需要使用代码分割来将不同代码单独打包成不同 chunk 输出。
+webpack 默认会将所有依赖的文件打包输出到一个 bundle.js 中（单入口时），当应用程序逐渐复杂，这个 bundle.js 文件也会随之越来越大，浏览器加载 bundle.js 文件的速度也会越来越慢，从而导致首页渲染推迟，即首页容易出现长时间的空白状态。此时就需要使用代码分割来将不同代码单独打包成不同 chunk 输出。
 
-**代码分离（Code Splitting）**是 webpack 一个非常重要的特性：它主要的目的是将代码分离到不同的 chunk 中，之后我们可以按需加载，或者并行加载这些文件。比如默认情况下，所有的 JavaScript 代码（业务代码、第三方依赖、暂时没有用到的模块）在首页全部都加载，就会影响首页的加载速度，代码分离可以拆分出更小的 chunk，以及控制资源加载优先级，提供代码的加载性能，缩短首屏渲染时间。
+了解代码分离之前，首先必须了解一个概念：chunk。
 
-webpack 中常用的代码分离有三种：
+何为 chunk？首先，我们在 webpack 中谈的最多的其实是一个叫 module(模块)的概念，我们编写的任何一个文件，对于 webpack 而言，都是一个的模块。所以 webpack 配置中有一个 module 配置项，而 module.rules 就是配置处理某个模块的规则，即处理这个模块所使用的 loader。
+
+而 chunk 是 webpack 在打包过程中一堆 module 所形成的一个代码块。webpack 会由入口文件开始，根据模块依赖图将这条打包路径上所有被引用的 module 都打包到一起，形成一个 chunk。
+
+**代码分离（Code Splitting）** 是 webpack 一个非常重要的特性：它的作用就是将原先打包输出的一个 bundle.js 文件拆分成多个 chunk，主要的目的是将代码分离到不同的 chunk 中，之后我们可以按需加载，或者并行加载这些文件。比如默认情况下，所有的 JavaScript 代码（业务代码、第三方依赖、暂时没有用到的模块）在首页全部都加载，就会影响首页的加载速度，代码分离可以拆分出更小的 chunk，以及控制资源加载优先级，提供代码的加载性能，缩短首屏渲染时间。
+
+webpack 中，以下三种情况将会分离出一个新的 chunk：
 
 - 入口起点：使用 entry 配置分离代码；
-- 防止重复：使用`Entry Dependencies`或者`SplitChunksPlugin`去重和分离代码；
-- 动态导入：通过模块的内联函数分离代码
+- 代码分割：使用`SplitChunksPlugin`去重和分离代码；
+- 动态导入：通过异步加载模块分离代码
 
 ### 入口起点
 
@@ -1856,11 +1862,109 @@ const path = require('path')
 module.exports = {
   entry: {
     main: './src/main.js',
-    index: './src/index.js'
+    index: './src/index.js',
   },
   output: {
     filename: '[name].bundle.js',
-    path: path,resolve(__dirname, 'dist')
-  }
+    path: path.resolve(__dirname, 'dist'),
+  },
 }
 ```
+
+上面的配置就会产生两条不同的打包路径，每条打包路径都会生产一个 chunk，因此最终会生成两个 chunk 文件。
+
+但是当 main.js 和 index.js 同时引入同一文件，比如 about.js，此时 about.js 会同时被打包到两个 chunk 文件中，这显然还是会影响性能。此时我们可以稍微修改一下 entry 配置：
+
+```js
+const path = require('path')
+module.exports = {
+  entry: {
+    main: { import: './src/main.js', dependOn: 'shared' },
+    index: { import: './src/index.js', dependOn: 'shared' },
+    shared: ['./src/about.js'],
+  },
+  output: {
+    filename: '[name].bundle.js',
+    path: path.resolve(__dirname, 'dist'),
+  },
+}
+```
+
+这个时候，about.js 文件就会被分离出来单独打包成一个 chunk：`shared.bundle.js`.然后在打包生成的`a.bundle.js`和`b.bundle.js`文件中引入，这样就可以使源代码中即使被多次引用的代码块最终也只生成一个 chunk，防止重复打包。
+
+### splitChunks
+
+另一种分包模式是 splitChunks，它是目前使用最多的代码分离方式，主要是通过`SplitChunksPlugin`对多处复用的公共包进行单独抽离打包来实现代码分离。比如我们在 main.js 和 index.js 中都使用的某个包，那么 splitChunks 就会单独把这个公共的资源包进行抽离打包。
+
+由于 webpack 已默认安装和集成`SplitChunksPlugin`插件了，所以我们可以在项目中直接使用该插件，只需要提供 SplitChunksPlugin 相关的配置信息即可。
+
+- chunks：指明哪些 chunk 将进行优化分离，可选值为：async(异步)、initial(同步)、all(所有)。默认为 async，即，只有异步请求才进行代码分离。
+- minSize：生成 chunk 的最小体积，即，如果需要拆分出了一个 chunk，那么这个 chunk 最小体积为 miniSize。单位为 bytes，默认为 20000bytes
+- maxSize：将大于 maxSize 的包进行拆分，拆分成不小于 miniSize 的包，默认为 0，一般设置为与 minSize 相同的值。
+- minChunks：表示引入的包，至少被导入多少次才拆分，默认为 1。
+
+```js
+module.exports = {
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      minSize: 20000,
+      maxSize: 20000,
+      minChunks: 1,
+    },
+  },
+}
+```
+
+- cacheGroups：用于对拆分的包进行分组。
+
+```js
+module.exports = {
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      cacheGroups: {
+        vendors: {
+          test: /[\\/]node_modules[\\/]/, //正则匹配位于node_modules文件夹下的所有文件，是一个路径
+          filename: '[id]._vendors.js',
+          priority: -10, //优先级，通常为负数
+        },
+        default: {
+          minChunks: 2,
+          filename: 'common_[id].js',
+          priority: -20,
+        },
+      },
+    },
+  },
+}
+```
+
+上面的配置表示所有引用的第三方包将会被打包到`[id]_vendors.js`中，而所有被引用了两次的包会被打包到`common_[id].js`中，当某个文件同时符合上面两个条件时，会依据优先级高的规则打包。比如，当匹配到 lodash(一个第三方包)时，webpack 不会立刻拆分它，而是会缓存起来，等到所有匹配都加载完成后，再和其他的第三方包一起打包输出到一个文件中。
+
+### 动态导入(dynamic import)
+
+对于通过异步加载方式动态导入的代码，webpack 一定会将其单独打包的。常见的异步加载方式就是 ECMAScript 中的 import 函数。
+
+webpack 遇到动态导入的代码会将其单独打包输出，输出的文件名是依据[optimization.chunksId](https://webpack.docschina.org/configuration/optimization/#optimizationchunkids)的算法生成的。
+
+当然我们也可以通过`output.chunkFilename`属性自定义输出的文件名，比如如下配置：
+
+```js
+output: {
+  chunkFilename: '[name].chunk.js'
+}
+```
+
+但是，我们会发现即使配置了`output.chunkFilename`属性，我们打包出来的文件名依旧会`id.chunk.js`的形式，并不能做到见名知义，如果想打包输出的文件名和原模块一一对应，除了上面的配置，我们还应在动态引入模块的时候使用一种叫做魔法注释的特殊语法，让 webpack 知道打包后应该输出的文件名。
+
+```js
+// webpack将会输出about.chunk.js文件
+import(/*webpackChunkName: 'about'*/ './about.js')
+```
+
+#### prefetch(预获取)和 preload(预加载)
+
+我们都知道，当动态导入一个模块时，浏览器并不会马上请求加载这个模块，而是等到需要用到时才发送请求下载并编译。然而当动态导入的模块体积很大时，浏览器下载这个模块就需要耗费较多的时间，导致用户长时间看不到效果。
+
+prefetch 是告诉浏览器等到首屏渲染完成后，浏览器空闲下来的时候提前将后面需要用到的异步 js 代码先下载到缓存中，真正需要的时候直接从缓存中获取，这样就可以缩短渲染时间，提高性能。
