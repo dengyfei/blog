@@ -1892,6 +1892,8 @@ module.exports = {
 
 这个时候，about.js 文件就会被分离出来单独打包成一个 chunk：`shared.bundle.js`.然后在打包生成的`a.bundle.js`和`b.bundle.js`文件中引入，这样就可以使源代码中即使被多次引用的代码块最终也只生成一个 chunk，防止重复打包。
 
+<div id='1'></div>
+
 ### splitChunks
 
 另一种分包模式是 splitChunks，它是目前使用最多的代码分离方式，主要是通过`SplitChunksPlugin`对多处复用的公共包进行单独抽离打包来实现代码分离。比如我们在 main.js 和 index.js 中都使用的某个包，那么 splitChunks 就会单独把这个公共的资源包进行抽离打包。
@@ -1940,7 +1942,10 @@ module.exports = {
 }
 ```
 
-上面的配置表示所有引用的第三方包将会被打包到`[id]_vendors.js`中，而所有被引用了两次的包会被打包到`common_[id].js`中，当某个文件同时符合上面两个条件时，会依据优先级高的规则打包。比如，当匹配到 lodash(一个第三方包)时，webpack 不会立刻拆分它，而是会缓存起来，等到所有匹配都加载完成后，再和其他的第三方包一起打包输出到一个文件中。
+上面的配置表示所有引用的第三方包将会被打包到 vendors 模块下的`[id]_vendors.js`中，而所有被引用了两次的包会被打包到 default 模块下的`common_[id].js`中，当某个文件同时符合上面两个条件时，会依据优先级高的规则打包。比如，当匹配到 lodash(一个第三方包)时，webpack 不会立刻拆分它，而是会缓存起来，等到所有匹配都加载完成后，再和其他的第三方包一起打包输出到一个文件中。
+:::warning
+splitChunks 中的配置项，如 name、minSize、chunks 等，都可以在 cacheGroups 配置。
+:::
 
 ### 动态导入(dynamic import)
 
@@ -1965,6 +1970,267 @@ import(/*webpackChunkName: 'about'*/ './about.js')
 
 #### prefetch(预获取)和 preload(预加载)
 
+单页面应用由于页面过多从而导致代码体积太大，使得首屏渲染速度变慢。为了解决这个问题，我们可以使用代码分离技术来切分代码。但是当我们切割代码后，首屏渲染速度确实是会提高不少，但同时也会引起另一个问题，就是当我们跳到其他页面时，需要先下载对应页面的 js 文件，然后才能渲染，这样的话，就会频繁出现 loading，用户体验感也不是太好。
+
 我们都知道，当动态导入一个模块时，浏览器并不会马上请求加载这个模块，而是等到需要用到时才发送请求下载并编译。然而当动态导入的模块体积很大时，浏览器下载这个模块就需要耗费较多的时间，导致用户长时间看不到效果。
 
-prefetch 是告诉浏览器等到首屏渲染完成后，浏览器空闲下来的时候提前将后面需要用到的异步 js 代码先下载到缓存中，真正需要的时候直接从缓存中获取，这样就可以缩短渲染时间，提高性能。
+prefetch 和 preload 是告诉浏览器等到首屏渲染完成后，浏览器空闲下来的时候提前将后面需要用到的异步 js 代码先下载到缓存中，真正需要的时候直接从缓存中获取，这样就可以缩短渲染时间，提高性能。
+
+:::warning
+虽然 prefetch 和 preload 都是告诉浏览器要提前下载对应的 chunks，但是它们也有许多不同之处：
+
+1、preload chunk 会在父 chunk 加载时，以并行的方式加载；而 prefetch chunk 则需等到父 chunk 加载结束后才能开始加载的。
+
+2、preload chunk 具有中等优先级，并立即下载；而 prefetch chunk 会在浏览器闲置时下载。
+
+3、preload chunk 会在父 chunk 中立即请求，用于当下时刻；而 prefetch chunk 会用于未来的某个时刻。
+
+因此，开发中 prefetch 的使用频率会高于 preload
+:::
+
+```js
+// webpack将会输出about.chunk.js文件
+import(
+  /*webpackChunkName: 'about'*/
+  /*webpackPrefetch: true*/
+  './about.js'
+)
+```
+
+:::warning
+prefetch 是以`<link rel="prefetch" as="script">`的形式预获取资源的
+:::
+
+## optimization(优化)
+
+### splitChunks
+
+[详情见代码分离](#1)
+
+### runtimeChunk
+
+runtimeChunk 用于配置 runtime 相关的代码是否抽取到一个单独的 chunk 中。runtime 相关的代码指的是在运行环境中，对模块进行解析、加载、模块信息相关的代码； 比如通过 import 函数相关的代码加载，就是通过 runtime 代码完成的。
+
+抽离出来后，会在打包目录下多出一个`runtime.build.js`的文件，这会有利于浏览器缓存的策略： 比如我们修改了业务代码（main），那么 runtime 和 component、bar 的 chunk 是不需要重新加载的； 比如我们修改了 component、bar 的代码，那么 main 中的代码是不需要重新加载的。
+
+```js
+module.exports = {
+    optimization: {
+        //true或者multiple：针对每个入口打包一个runtime文件
+        runtimeChunk: true
+        //single：将所有runtime代码打包到一个runtime文件中
+        runtimeChunk: single
+        //object: 给打包后的runtime包命名
+        runtimeChunk: {
+        	name: 'runtime'
+    	}
+    }
+}
+```
+
+## Tree Shaking
+
+Tree Shaking 依赖于 ES Module 的静态语法分析(不执行任何的代码，就能明确知道模块的依赖关系)
+
+Tree Shaking(树摇)：**移除 JavaScript 上下文中的未引用代码(dead-code)**。将整个应用程序想象成一棵树，绿色的树叶表示实际用到的 source code（源码）和 library（库），灰色的树叶则表示未被使用的代码，是枯萎的树叶。为了除去这些死去的无用的树叶，你需要摇动这棵树使其落下。这就是 Tree Shaking 的名称由来。
+
+在 webpack 中，有两种方案可以实现 [Tree Shaking](https://webpack.docschina.org/guides/tree-shaking/):
+
+**方案一：**
+
+在 optimization 中配置 usedExports 为 true，来帮助 Terser 进行优化。usedExports 的作用是通过标记某些函数是否被使用，之后通过 Terser 来进行优化的，默认情况下，生产模式使用的就是这种方式进行 Tree Shaking 的;
+
+**方案二：**
+
+在 package.json 中配置 sideEffects，直接对模块进行优化。sideEffects 可以跳过整个模块/文件，直接查看该文件是否有副作用。
+
+那到底怎么设置 Tree Shaking？其实不用特别配置，只要将 mode 设置为"production"，Webpack 就自动启用 Tree Shaking 了。有两点说明下:
+
+- 源代码必须使用 静态的 ES6 模块化语法。原因是 Webpack 在构建时通过静态分析，分析出代码之间的依赖关系。而动态导入如 require 语法只有在执行时才知道导入了哪个模块，所以无法做 Tree Shaking。
+
+- 三方库无法做 Tree Shaking。原因是 Webpack 无法保证三方库导入是否会直接对程序产生影响。
+
+## HTTP 压缩
+
+HTTP 压缩是一种内置在服务器和客户端之间的，以改进传输速度和带宽利用率的方式。
+
+### HTTP 压缩流程：
+
+第一步： HTTP 数据在服务器发送前就已经被压缩了(可以在 webpack 中完成)
+
+第二步：兼容浏览器在项服务器发送请求时，会告知服务器自己支持哪些压缩格式，比如下面浏览器向服务器请求 app.js 文件，就会告诉服务器自己支持 gzip 格式
+
+<div align=center>
+<img src="./img/gzip.png"/>
+</div>
+
+第三步：服务器在浏览器支持的格式下，直接返回对应压缩后的文件，并且在响应头中告知浏览器。比如服务器直接返回 app.js.gz 的 gzip 文件，并告知浏览器。然后浏览器会将 app.js.gz 压缩文件解压成 app.js 文件。
+
+<div align=center>
+<img src="./img/response.png"/>
+</div>
+
+### webpack 对文件压缩
+
+webpack 中可以通过`compressionPlugin`插件来压缩文件，相当于实现了 HTTP 压缩流程中的第一步。
+
+```js
+npm i compression-webpack-plugin -D
+```
+
+```js
+// webpack.prod.js
+new CompressionPlugin = require('compression-webpack-plugin')
+
+module.exports = {
+  plugin: [
+    new CompressionPlugin(
+      {
+        test: /\.[css|js]$/i      只压缩css和js文件
+      }
+    )
+  ]
+}
+```
+
+## webpack 其他相关知识
+
+### compiler 和 compilation 的区别
+
+compiler 对象是在 webpack 构建之初就会创建的一个对象，并且在 webpack 的整个生命周期中都会存在(before -- run -- beforeCompiler --compile -- make -- finishMake -- afterCompiler -- done)。只要是做 webpack 编译，都会创建一个 compiler 对象，并且只有当配置项发生改变并重新 npm run build 的时候才会改变
+
+compilation 是到准备编译模块(比如 main.js)，才会创建。具体是在 compile(之后)-- make(之前)阶段创建。只要源码发生改变，就会重新创建一个 compilation
+
+### Terser
+
+定义： Terser 是一个 JavaScript 的解析(Parser)、丑化(mangle)/压缩(compressor)的工具集，它的作用就是通过压缩、丑化代码，从而让我们的代码变得更小。事实上，在真实开发中，我们不需要手动的通过 terser 来处理我们的代码，因为默认情况下，webpack 的生产模式会自动使用 TerserPlugin 来处理代码。
+
+### DLL
+
+dll（动态链接库）：使用 dll 技术对公共库进行提前打包，可大大提升构建速度。公共库一般情况下是不会有改动的，所以这些模块只需要编译一次就可以了，并且可以提前打包好。在主程序后续构建打包时如果检测到该公共库已经通过 dll 打包了，就不再对其编译而是直接从动态链接库中获取。
+
+### CDN
+
+CDN 称之为内容分发网络（**C**ontent **D**elivery **N**etwork 或**C**ontent **D**istribution **N**etwork，缩写：**CDN**） 它是指通过相互连接的网络系统，利用最靠近每个用户的服务器；更快、更可靠地将音乐、图片、视频、应用程序及其他文件发送给用户； 来提供高性能、可扩展性及低成本的网络内容传递给用户。
+
+一般有两种方式：
+
+方式一：将打包后的所有静态资源都放到 cdn 服务器上，用户所有资源都是从 cdn 服务器上下载的。我们直接修改`output中的publicPath`为 cdn 地址就可以了。不过这种方式需要收费，也不常用
+
+方式二：第三方库的 cdn 服务器。就是我们打包的时候，不用打包第三方库，而是在 index.html 中通过 cdn 的方式引入第三方包。
+
+通常一些比较出名的开源框架都会将打包后的源码放到一些比较出名的、免费的 CDN 服务器上。
+
+## Gulp
+
+gulp 的核心理念时 task runner，可以定义一系列任务，等待任务被执行，它是基于文件 stream 的构建流，我们可以使用 gulp 的插件体系来完成某些任务。
+
+gulp 相对于 webpack 思想更加的简单、易用，更适合编写一些自动化的任务，但是由于 gulp 并不支持模块化，因此目前对于大型项目(Vue、React、Angular )并不会使用 gulp 来构建。
+
+### gulp 的基本使用
+
+每个 gulp 任务都是一个异步的 JavaScript 函数，这个函数接受一个 callback 作为参数，调用 callback 函数返回的是一个 stream、promise、event emitter、child process 或 observable 类型的函数用以表明任务结束。
+
+```js
+npm i gulp
+```
+
+新建一个 gulpfile.js 文件
+
+```js
+// 定义任务
+const foo = (cb) => {
+  console.log('foo')
+  cb() //结束任务必须调用回调函数
+}
+
+module.exports = {
+  foo,
+}
+
+// 定义默认任务
+module.export.default = (cb) => {
+  console.log('default task')
+  cb()
+}
+```
+
+使用 gulp 执行任务
+
+```js
+// 执行特定任务
+npx gulp foo
+
+// 执行默认任务
+npx gulp
+```
+
+:::tip
+当然也可以多个任务一起执行，gulp 提供了两种组合方式：
+
+series()：串行任务组合
+
+parallel()：并行任务组合
+:::
+
+```js
+// gulpfile.js
+
+const { series } = require('gulp')
+
+const task1 = (cb) => {
+  console.log('task1')
+  cb()
+}
+const task2 = (cb) => {
+  console.log('task2')
+  cb()
+}
+
+const seriesTask = series(task1, task2)
+
+module.exports = {
+  seriesTask,
+}
+```
+
+当执行 seriesTask 任务时，输出如下内容：
+
+![gulp_series](./img/gulp_series.png)l
+
+### 读取和写入文件
+
+gulp 暴露了`src()`和`dest()`方法用于处理计算机上存放的文件。
+
+src()接受一个路径参数，并从文件系统中读取文件然后生成一个 Node 流(Stream)，它将所有匹配的文件读取到内存中并通过流( Stream)进行处理，由 src()产生的流( stream )应当从任务( task 函数）中返回并发出异步完成的信号。
+
+dest()接受一个输出目录作为参数，并且它还会产生一个 Node 流(stream)，通过该流将内容输出到文件中。
+
+流( stream )所提供的主要的 API 是`pipe()`方法，pipe 方法的原理是什么呢?
+
+pipe 方法接受一个转换流(Transform streams)或可写流(Writable streams) ，那么转换流或者可写流，拿到数据之后可以对数据进行处理，再次传递给下一个转换流或者可写流。
+
+```js
+const { src, dest } = require('gulp')
+const task = () => {
+  return src('./src/*.js').pipe(dest('./dist')) //将src下的所有js文件输出到dist目录下
+}
+module.exports = {
+  task,
+}
+```
+
+### 使用 gulp 对文件进行转换
+
+```js
+const { src, task } = require('gulp')
+const babel = require('gulp-babel')
+const terser = require('gulp-terser')
+
+const task = () => {
+  return src('./src/*.js')
+    .pipe(babel({ presets: ['@babel/preset-env'] })) // 将es6转成es5
+    .pipe(terser({ mangle: { toplevel: true } })) //压缩
+    .pipe(dest('./dist'))
+}
+```
