@@ -1592,6 +1592,25 @@ module.exports = {
 }
 ```
 
+**watchOptions**
+webpack 文件监听的原理是轮询判断文件最后的编辑时间是否变化，当某个文件发生变化时，并不会立刻告诉监听者，而是先缓存起来，等待一段时间后，将这段时间内发生变化的文件列表一起构建打包。而 watchOptions 就是一组用来定制 watch 的配置。
+
+```js
+module.exports = {
+  // 默认为false，也就是不开启
+  watch: true,
+  // 只有开启监听模式时，watchOptions才有意义
+  watchOptions: {
+    // 默认为空，不监听的文件或文件夹，支持正则匹配
+    ignored: /node_modules/,
+    // 监听到变化后等300ms再执行，默认300ms
+    aggregateTimeout: 300,
+    // 判断文件是否发生变化是通过不停询问系统指定文件有没有变化实现的，默认每秒问1000次
+    poll: 1000,
+  },
+}
+```
+
 watch 模式的缺点：
 
 1、一旦某个文件发生改变，所有的源代码都将重新进行编译
@@ -1637,12 +1656,22 @@ webpack-dev-server 的优势在于，编译后不会写入任何输出文件，�
 
 #### 模块热替换(HMR)
 
-HMR 的全称是`Hot Module Replacement`，翻译为模块热替换；模块热替换是指在应用程序运行过程中，只替换、添加、删除某个模块，而无需重新刷新整个页面。
+HMR 的全称是`HotModuleReplacement`，翻译为模块热替换；模块热替换是指在应用程序运行过程中，只替换、添加、删除某个模块，而无需重新刷新整个页面。
 
 刷新我们一般分为两种：
 
 - 一种是页面刷新，不保留页面状态，就是简单粗暴，直接`window.location.reload()`。
 - 另一种是基于`WDS (Webpack-dev-server)`的模块热替换，只需要局部刷新页面上发生变化的模块，同时可以保留当前的页面状态，比如复选框的选中状态、输入框的输入等。
+
+`HotModuleReplacement`已经被内置到 webpack 当中，所不需要额外引入
+
+```js
+const webpack = require('webpack')
+
+module.exports = {
+  plugins: [new webpack.HotModuleReplacement()],
+}
+```
 
 **热替换的优势：**
 
