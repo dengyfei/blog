@@ -16,7 +16,7 @@ cd ../dblog/dist
 # git初始化，每次初始化不影响推送
 git init
 git add -A
-git commit -m 'deploy'
+git commit -m 'webpack笔记'
 
 # 如果你想要部署到 https://USERNAME.github.io
 git push -f git@github.com:dengyfei/dengyfei.github.io.git master
