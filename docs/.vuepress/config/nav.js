@@ -24,6 +24,7 @@ module.exports = [
     items: [
       { text: 'css', link: '/basic/css/sass' },
       { text: 'webpack', link: '/basic/webpack/webpack' },
+      { text: 'babel', link: '/basic/babel/babel' },
     ],
   },
   {
