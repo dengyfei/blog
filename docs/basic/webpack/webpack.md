@@ -548,6 +548,38 @@ module.exports = {
 }
 ```
 
+### eslint-loader
+
+在公司中，很少有一个人单独负责某一个项目全部功能的开发，更多时候是多人协作开发。但是由于每个人编码习惯的差异，可能会导致代码冲突。而 eslint 就是目前市场主流的限制 js 代码规范的工具。
+
+**webpack 中使用 eslint**
+
+1、安装 loader
+
+```js
+npm i eslint-loader -D
+```
+
+2、配置 eslint 规范
+
+在目录中新建`.eslintrc.js`文件，然后配置规范，具体可以查找[eslint 网站](https://eslint.org/docs/latest/use/configure/)
+
+3、在`webpack.config.js`中使用 loader
+
+```js
+module.exports = {
+  rules: [
+    {
+      test: /\.js/,
+      exclude: /node_modules/,
+      loader: ['babel-loader', 'eslint-loader'],
+    },
+  ],
+}
+```
+
+4、使用 prettier 格式化，在目录下新建`.prettierrc`文件并配置参数，具体参数可查看[prettier 官网](https://prettier.io/playground/)
+
 ### 自定义 loader
 
 loader 本质上是导出一个函数的 JavaScript 模块，webpack 在解析过程中，loader runner 库会调用这个函数，然后将上一个 loader 产生的结果或资源文件传入进去。
@@ -975,7 +1007,7 @@ Plugin 可以用于执行更加广泛的任务，目的在于解决 loader 无�
 
 ### CleanWebpackPlugin
 
-**作用：** 当我们重新打包时，会自动帮助我们删除上次打包生成的目录文件夹，
+**作用：** 当我们重新打包时，会自动帮助我们删除 output 指定输出目录中上次打包生成的目录文件夹，
 
 ```js
 npm i clean-webpack-plugin -D
@@ -1025,7 +1057,8 @@ module.exports = {
   ……
   new HtmlWebpackPlugin({
     title: '小邓同学',                         // 打包后的index.html的标题标签
-    template: './public/index.html'           // 以public文件夹下的index.html为模板来打包
+    template: './public/index.html',           // 以public文件夹下的index.html为模板来打包
+    chunks: ['bundle']              // html中要使用到的chunks
   })
 }
 ```
@@ -1166,13 +1199,16 @@ module.exports = {
 
 它的作用是对作用域进行提升，并且让 webpack 打包后的代码更小，运行更快。
 
-默认情况下 webpack 打包会有很多的函数作用域，包括一些(比如最外层的)IIFE。无论是从最开始的代码运行，还是加载一个模块，都需要执行一系列的函数，Scope Hoisting 可以将函数合并到一个模块中来运行。
+默认情况下 webpack 打包后的成果物中，每一个引入的模块都是一个函数，因此 webpack 的构建成果物中存在许多的函数作用域和闭包代码，包括一些(比如最外层的)IIFE。所以无论是从最开始的代码运行，还是加载一个模块，都需要执行一系列的函数。
 
-:::tip
-在 production 模式下，默认这个模块就会启用;
+这样会导致两个问题：
 
-在 development 模式下，我们需要自己来打开该模块;
-:::
+- 大量函数闭包包裹代码，导致体积增大，而且模块越多越明显；
+- 运行代码时创建的函数作用域变多，内存开销随之变大。
+
+  Scope Hoisting 可以将函数合并到一个模块中来运行。它的原理就是将所有模块的代码按照引用顺序放到一个函数作用域中，然后适当的重命名一些变量，以防止变量名冲突。比如 a 模块引用了 b 模块，那么 scope hoisting 会先定义 b 模块，然后再定义 a 模块，这个时候 a 中就可以直接引用 b 模块了。
+
+**开启 scope Hoisting**
 
 ```js
 const webpack = require('webpack')
@@ -1181,6 +1217,12 @@ module.exports = {
   plugins: [new webpack.optimize.ModuleConcatenationPlugin()],
 }
 ```
+
+:::tip
+在 production 模式下，默认这个模块就会启用，仅对 ES6 语法起作用，对 CommonJS 无效;
+
+在 development 模式下，我们需要自己来打开该模块;
+:::
 
 ### 自定义 Plugin
 
@@ -1382,7 +1424,7 @@ module.exports = {
 
 官方文档介绍 devtool 的值多达 26 种选择，不同的值有效果不同，打包时间、加载运行时间也会有所差异。但其实这 26 种可选值都是由以下几个短语拼凑而成，因此，只要明白这些短语的含义，就能选择性能较好的效果。
 
-inline：将`//# sourceMappingURL= bundle.js.map`放到文件的最后面，生成 sourc-map 文件
+inline：将`//# sourceMappingURL= bundle.js.map`放到文件的最后面，不会生成 sourc-map 文件，而是将 source-map 的内容直接放到 js 文件的后面
 
 hidden：隐藏`//# sourceMappingURL= bundle.js.map`注释，但会生成 sourc-map 文件
 
@@ -1929,7 +1971,7 @@ module.exports = {
 
 由于 webpack 已默认安装和集成`SplitChunksPlugin`插件了，所以我们可以在项目中直接使用该插件，只需要提供 SplitChunksPlugin 相关的配置信息即可。
 
-- chunks：指明哪些 chunk 将进行优化分离，可选值为：async(异步)、initial(同步)、all(所有)。默认为 async，即，只有异步请求才进行代码分离。
+- chunks：指明哪些 chunk 将进行优化分离，可选值为：async(异步)、initial(同步)、all(所有)。默认为 async，即，只有异步请求才进行代码分离，推荐使用 all。
 - minSize：生成 chunk 的最小体积，即，如果需要拆分出了一个 chunk，那么这个 chunk 最小体积为 miniSize。单位为 bytes，默认为 20000bytes
 - maxSize：将大于 maxSize 的包进行拆分，拆分成不小于 miniSize 的包，默认为 0，一般设置为与 minSize 相同的值。
 - minChunks：表示引入的包，至少被导入多少次才拆分，默认为 1。
@@ -2059,7 +2101,7 @@ module.exports = {
 
 ## Tree Shaking
 
-Tree Shaking 依赖于 ES Module 的静态语法分析(不执行任何的代码，就能明确知道模块的依赖关系)
+Tree Shaking 依赖于 ES Module 的静态语法分析(在编译阶段，不执行任何的代码，就能明确知道模块的依赖关系)，其他的模块化引入方式(commonJS、AMD)无法实现 Tree Shaking
 
 Tree Shaking(树摇)：**移除 JavaScript 上下文中的未引用代码(dead-code)**。将整个应用程序想象成一棵树，绿色的树叶表示实际用到的 source code（源码）和 library（库），灰色的树叶则表示未被使用的代码，是枯萎的树叶。为了除去这些死去的无用的树叶，你需要摇动这棵树使其落下。这就是 Tree Shaking 的名称由来。
 
