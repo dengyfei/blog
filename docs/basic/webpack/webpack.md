@@ -2099,6 +2099,35 @@ module.exports = {
 }
 ```
 
+### minimize
+
+告知 webpack 使用`TerserPlugin`或其它在`optimization.minimizer`中定义的插件压缩构建，通常和`optimization.minimizer`一起使用。
+
+```js
+module.exports = {
+  ……
+  optimization: {
+    minimize: false
+  }
+}
+```
+
+### minimizer
+
+允许用户定义一个或多个`TerserPlugin`来压缩对应成果物。
+
+```js
+const TerserPlugin = require('terser-webpack-plugin')
+
+module.exports = {
+  ……
+  optimization: {
+    minimize: true,
+    minimizer: [ new TerserPlugin() ]
+  }
+}
+```
+
 ## Tree Shaking
 
 Tree Shaking 依赖于 ES Module 的静态语法分析(在编译阶段，不执行任何的代码，就能明确知道模块的依赖关系)，其他的模块化引入方式(commonJS、AMD)无法实现 Tree Shaking
@@ -2161,6 +2190,37 @@ module.exports = {
       }
     )
   ]
+}
+```
+
+## webpack 打包组件和第三方库
+
+webpack 不仅可以打包应用，也可以用来打包 js 库。打包 js 库用到的属性主要是`output.library`，下面是一个例子：
+
+```js
+const TerserPlugin = require('terser-webpack-plugin')
+
+module.exports = {
+  // 输出 large-number和large-number.min文件
+  entry: {
+    'large-number': './src/index.js',
+    'large-number.min': './src/index.js',
+  },
+  output: {
+    filename: '[name].js',
+    library: {
+      name: 'largeNumber', //输出库的名字
+      target: 'umd', //输出的格式，umd代表可以通过commonjs，esModule, amd等多种格式引入
+      export: 'default', //指定导出的哪个模块被暴露为一个库，通常设置为default，因为暴露时通常使用export default
+    },
+  },
+  mode: 'none',
+  optimization: {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({ include: /\.min\.js$/ }), //只压缩min.js文件
+    ],
+  },
 }
 ```
 
