@@ -2224,6 +2224,76 @@ module.exports = {
 }
 ```
 
+## webpack 性能分析
+
+### 速度分析
+
+webpack 打包的速度分析主要是借助一个插件：[speed-measure-webpack-plugin](https://github.com/stephencookdev/speed-measure-webpack-plugin)。它可以帮我们输出整个打包构建过程中每一个 plugin 和 loader 所花费的时间，绿色表示速度较快，红色表示耗费时间过高，需要重点关注。使用起来也非常简单，只需要引入插件并用生成的实例将原本构建配置包裹即可。
+
+```js
+npm i speed-measure-webpack-plugin
+```
+
+```js
+// 引入插件
+const speedMeasureWebpackPlugin = require('speed-measure-webpack-plugin')
+
+// 生成实例
+const smp = new speedMeasureWebpackPlugin()
+
+module.exports = smp.wrap({
+  module: {……},
+  plugins: [……]
+})
+```
+
+### 体积分析
+
+体积分析也是借助一个插件：[webpack-bundle-analyzer](https://github.com/webpack-contrib/webpack-bundle-analyzer)，这个插件会以可视化的方式展示构建包各个部分的大小，面积占比越大，体积则越大，以帮助我们了解哪个组件需要优化。
+
+```js
+npm i bundle-webpack-analyzer -D
+```
+
+```js
+const { BundleAnalyzerPlugin } = require('bundle-webpack-analyzer')
+
+module.exports = {
+  plugins: [new BundleAnalyzerPlugin()],
+}
+```
+
+### 并行构建
+
+默认情况下，webpack 只会开启一个进程构建打包，当我们的包比较大的时候，就会出现耗时较久的现象。此时，我们可以使用 thread-loader 来开启多进程打包，加快构建速度。
+
+thread-loader 需要放到其他 loader 的前面，即 thread-loader 需要最后执行。thread-loader 会形成一个线程池，放置在 thread-loader 后面的 loader 都会被放入到这个线程池中运行，并且不会阻塞主线程的运行，即该线程池和主线程是并发进行的。
+
+```js
+npm i thread-loader -D
+```
+
+```js
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        use: [
+          {
+            loader: 'thread-loader',
+            options: {
+              worker: 3,
+            },
+          },
+          // 其他loader
+        ],
+      },
+    ],
+  },
+}
+```
+
 ## webpack 其他相关知识
 
 ### compiler 和 compilation 的区别
@@ -2242,7 +2312,7 @@ dll（动态链接库）：使用 dll 技术对公共库进行提前打包，可
 
 ### CDN
 
-CDN 称之为内容分发网络（**C**ontent **D**elivery **N**etwork 或**C**ontent **D**istribution **N**etwork，缩写：**CDN**） 它是指通过相互连接的网络系统，利用最靠近每个用户的服务器；更快、更可靠地将音乐、图片、视频、应用程序及其他文件发送给用户； 来提供高性能、可扩展性及低成本的网络内容传递给用户。
+CDN 称之为内容分发网络（Content Delivery Network 或 Content Distribution Network，缩写：**CDN**） 它是指通过相互连接的网络系统，利用最靠近每个用户的服务器；更快、更可靠地将音乐、图片、视频、应用程序及其他文件发送给用户； 来提供高性能、可扩展性及低成本的网络内容传递给用户。
 
 一般有两种方式：
 
