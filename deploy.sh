@@ -13,7 +13,7 @@ cp -rf docs/.vuepress/dist ../dblog/dist
 # 进入生成的文件夹
 cd ../dblog/dist
 
-# git初始化，每次初始化不影响推送
+# # git初始化，每次初始化不影响推送
 git init
 git add -A
 git commit -m 'babel笔记'
