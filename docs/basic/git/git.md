@@ -159,6 +159,18 @@ git pull origin 远程分支
 git checkout -b dev_local origin/dev
 ```
 
+## 查看追踪分支
+
+何为追踪分支？本地分支在远程的上流分支称为追踪分支。在工作区域中有两种方式可以查看对应的追踪分支
+
+```js
+// 查看所有分支对应的追踪分支及其sha1值
+git branch -vv
+
+// 查看当前分支的追踪分支
+git remote -v
+```
+
 ## 查看日志
 
 有三种方式帮助我们查看日志
