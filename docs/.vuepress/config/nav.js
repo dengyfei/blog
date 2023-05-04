@@ -29,6 +29,10 @@ module.exports = [
     ],
   },
   {
+    text: '算法',
+    link: 'algorithm/algorithm.md',
+  },
+  {
     text: '博客',
     icon: 'reco-blog',
     items: [

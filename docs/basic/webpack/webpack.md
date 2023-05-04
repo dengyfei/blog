@@ -17,7 +17,7 @@ categories:
 
 那么，我们为什么需要使用 webpack？
 
-- webpack 可以帮助我们开发时调用后端接口的跨域问题
+- webpack 可以帮助我们解决开发时调用后端接口的跨域问题
 - webpack 可以帮助我们在改动源代码后自动将变动更新至浏览器
 - 由于 js 和 css 的兼容性问题，浏览器并不支持那些新特性，webpack 可以将其转换成浏览器识别的对应的特性
 
@@ -160,7 +160,7 @@ output：指定出口文件
 
 - filename：打包后输出的文件名
 - path：打包后文件的输出目录，要求传入一个绝对路径
-- publicPath：该属性是指定 index.html 文件打包引用的一个基本路径
+- publicPath：该属性是指定 index.html 文件打包引用的一个基本路径，默认为：/
 
 :::danger
 output 中的 publicPath 属性应该写以根目录方式表示的路径(如：/dist/)，或者绝对路径，不应该是相对路径
