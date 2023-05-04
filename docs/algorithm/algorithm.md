@@ -202,6 +202,9 @@ function PriorityQueue() {
 
 ### 链表实现
 
+<details>
+<summary style="margin: 20px 0;color: #4e98bb; cursor: pointer">展开查看实现代码</summary>
+
 ```js
 function LinkList() {
   function Node(data) {
@@ -343,3 +346,335 @@ function LinkList() {
   }
 }
 ```
+
+</details>
+
+## 双向链表
+
+前面我们介绍的其实是单向链表，即只能从头遍历到尾，链表相连的过程是单向的。实现的原理是上一个链表中有一个指向下一个的引用。
+
+单向链表有一个比较明显的缺点：我们可以轻松的到达下一个节点，但是回到前一个节点是很难的。双向链表就能很好的解决这个问题，它既可以从头遍历到尾，又可以从尾遍历到头，也就是链表相连的过程是双向的。它的实现原理就是一个节点既有向前连接的引用，也有一个向后连接的引用。
+
+:::tip
+双向链表的缺点是相当于单向链表，必然占用内存空间更大一些。
+:::
+
+双向链表的特点：
+
+- 可以使用一个 head 和一个 tail 分别指向头部和尾部的节点
+- 每个节点都由三部分组成:前一个节点的指针(prev)/保存的元素(item)/后一个节点的指针(next)
+- 双向链表的第一个节点的 prev 是 null
+- 双向链表的最后的节点的 next 是 null
+
+### 双向链表的实现
+
+<details>
+<summary style="margin: 20px 0;color: #4e98bb; cursor: pointer">展开查看实现代码</summary>
+
+```js
+function DoublyLinkList() {
+  this.head = null
+  this.tail = null
+  this.length = 0
+  function Node(data) {
+    this.prev = null
+    this.data = data
+    this.next = null
+  }
+
+  // 追加
+  DoublyLinkList.prototype.append = function (data) {
+    var node = new Node(data)
+    if (this.length === 0) {
+      this.head = node
+      this.tail = node
+    } else {
+      node.prev = this.tail
+      this.tail.next = node
+      this.tail = node
+    }
+    this.length++
+  }
+
+  // 拼接
+  DoublyLinkList.prototype.toString = function () {
+    var res = ''
+    var current = this.head
+    while (current) {
+      res += current.data + ' '
+      current = current.next
+    }
+    return res
+  }
+
+  // 逆向遍历节点并返回
+  DoublyLinkList.prototype.forwardString = function () {
+    var res = ''
+    var current = this.tail
+    while (current) {
+      res += current.data + ' '
+      current = current.prev
+    }
+    return res
+  }
+
+  // 插入
+  DoublyLinkList.prototype.insert = function (position, data) {
+    if (position < 0 || position > this.length) return false
+    var node = new Node(data)
+    if (this.length === 0) {
+      this.head = node
+      this.tail = node
+    } else {
+      if (position === 0) {
+        this.head.prev = node
+        node.next = this.head
+        this.head = node
+      } else if (position === this.length) {
+        this.tail.next = node
+        node.prev = this.tail
+        this.tail = node
+      } else {
+        var current = null
+        if (position <= this.length / 2) {
+          var index = 0
+          current = this.head
+          while (index++ < position) {
+            current = current.next
+          }
+        } else {
+          var index = this.length - 1
+          current = this.tail
+          while (index-- > position) {
+            current = current.prev
+          }
+        }
+        current.prev.next = node
+        node.prev = current.prev
+        current.prev = node
+        node.next = current
+      }
+    }
+    this.length++
+    return true
+  }
+
+  // 访问
+  DoublyLinkList.prototype.get = function (position) {
+    if (position < 0 || position >= this.length) return null
+    var current
+    var index
+    if (position <= this.length / 2) {
+      index = 0
+      current = this.head
+      while (index++ < position) {
+        current = current.next
+      }
+    } else {
+      index = this.length - 1
+      current = this.tail
+      while (index-- > position) {
+        current = current.prev
+      }
+    }
+    return current
+  }
+
+  // 返回索引
+  DoublyLinkList.prototype.indexOf = function (data) {
+    var current = this.head
+    var index = 0
+    while (current) {
+      if (current.data === data) {
+        return index
+      }
+      current = current.next
+      index++
+    }
+    return -1
+  }
+
+  // 修改
+  DoublyLinkList.prototype.update = function (position, data) {
+    if (position < 0 || position >= this.length) return false
+    var current
+    var index
+    if (position <= this.length / 2) {
+      current = this.head
+      index = 0
+      while (index++ < position) {
+        current = current.next
+      }
+    } else {
+      current = this.tail
+      index = this.length - 1
+      while (index-- > position) {
+        current = current.prev
+      }
+    }
+    current.data = data
+    return true
+  }
+
+  // 删除某个位置的元素
+  DoublyLinkList.prototype.removeAt = function (position) {
+    if (position < 0 || position >= this.length) return null
+    var current
+    if (this.length === 1) {
+      current = this.head
+      this.tail = null
+      this.head = null
+    } else {
+      if (position === 0) {
+        current = this.head
+        this.head.next.prev = null
+        this.head = this.head.next
+      } else if (position === this.length - 1) {
+        current = this.tail
+        this.tail.prev.next = null
+        this.tail = this.tail.prev
+      } else {
+        if (position <= this.length / 2) {
+          current = this.head
+          var index = 0
+          while (index++ < position) {
+            current = current.next
+          }
+        } else {
+          current = this.tail
+          var index = this.length - 1
+          while (index-- > position) {
+            current = current.prev
+          }
+        }
+        current.prev.next = current.next
+        current.next.prev = current.prev
+      }
+    }
+    this.length--
+    return current
+  }
+
+  //  删除元素
+  DoublyLinkList.prototype.remove = function (data) {
+    var index = this.indexOf(data)
+    return this.removeAt(index)
+  }
+}
+```
+
+</details>
+
+## 集合
+
+集合通常是由一组无序的，不能重复的元素构成。没有顺序意味着不能通过下标值进行访问，不能重复意味着相同的对象在集合中只会存在一份。
+
+### 集合的实现
+
+<details>
+<summary style="margin: 20px 0;color: #4e98bb; cursor: pointer">展开查看实现代码</summary>
+
+```js
+function Set() {
+  // 属性
+  this.items = {}
+
+  // 方法
+
+  Set.prototype.add = function (value) {
+    // 如果已存在value，则不添加
+    if (this.has(value)) {
+      return false
+    } else {
+      this.items[value] = value
+      return true
+    }
+  }
+
+  Set.prototype.has = function (value) {
+    return this.items.hasOwnProperty(value)
+  }
+  Set.prototype.remove = function (value) {
+    if (!this.has(value)) {
+      return false
+    } else {
+      return delete this.items[value]
+    }
+  }
+  Set.prototype.size = function () {
+    return Object.keys(this.items).length
+  }
+  Set.prototype.clear = function () {
+    this.items = {}
+  }
+  Set.prototype.values = function () {
+    return Object.keys(this.items)
+  }
+}
+```
+
+</details>
+
+### 集合间操作
+
+1、并集：对于给定的两个集合，返回一个包含两个集合中所有元素的新集合。
+
+2、交集：对于给定的两个集合，返回一个包含两个集合中共有元素的新集合。
+
+3、差集：对于给定的两个集合，返回一个包含所有存在于第一个集合且不存在于第二个集合的元素的新集合
+
+4、子集：验证一个给定集合是否是另一集合的子集。
+
+<details>
+<summary style="margin: 20px 0;color: #4e98bb; cursor: pointer">展开查看实现代码</summary>
+
+```js
+// 并集
+Set.prototype.union = function (otherSet) {
+  var unionSet = new Set()
+  var values = otherSet.values()
+  for (var i = 0; i < values.length; i++) {
+    unionSet.add(values[i])
+  }
+  values = this.values()
+  for (var i = 0; i < values.length; i++) {
+    unionSet.add(values[i])
+  }
+  return unionSet
+}
+
+// 交集
+Set.prototype.intersection = function (otherSet) {
+  var intersectionSet = new Set()
+  var values = this.values()
+  for (var i = 0; i < values.length; i++) {
+    if (otherSet.has(values[i])) {
+      intersectionSet.add(values[i])
+    }
+  }
+  return intersectionSet
+}
+
+// 差集
+Set.prototype.difference = function (otherSet) {
+  var differenceSet = new Set()
+  var values = this.values()
+  for (let i = 0; i < values.length; i++) {
+    if (!otherSet.has(values[i])) {
+      differenceSet.add(values[i])
+    }
+  }
+  return differenceSet
+}
+
+// 子集
+Set.prototype.subSet = function (otherSet) {
+  var values = this.values()
+  for (var i = 0; i < values.length; i++) {
+    if (!otherSet.has(values[i])) return false
+  }
+  return true
+}
+```
+
+</details>
