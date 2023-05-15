@@ -678,3 +678,269 @@ Set.prototype.subSet = function (otherSet) {
 ```
 
 </details>
+
+## 哈希表
+
+哈希表的结构就是数组，但是它神奇的地方在于对下标值的一种变换，这种变换我们可以称之为哈希函数，通过哈希函数可以获取到 HashCode。
+
+哈希表通常是基于数组进行实现的，但是相对于数组，它又有许多的优势：
+
+- 它可以提供非常快速的插入-删除-查找操作
+- 无论多少数据,插入和删除值需要接近常量的时间：即 O(1)的时间级。实际上，只需要几个机器指令即可完成
+- 哈希表的速度比树还要快，基本可以瞬间查找到想要的元素。
+- 哈希表相对于树来说编码要容易很多。
+
+当然哈希表相对于数组也有自己的一些不足：
+
+- 哈希表中的数据是没有顺序的，所以不能以一种固定的方式(比如从小到大)来遍历其中的元素。
+- 通常情况下，哈希表中的 key 是不允许重复的，不能放置相同的 key，用于保存不同的元素.
+
+了解了哈希表后，我们还需要区分下面几个概念：
+
+1、哈希化：将大数字转化成数组范围内下标的过程，我们就称之为哈希化。
+
+2、哈希函数：通常我们会将单词转成大数字，大数字再进行哈希化的代码实现放在一个函数中，这个函数我们成为哈希函数。即，实现哈希化的函数。
+
+3、哈希表：最终将数据插入到的这个数组，对整个结构的封装，我们就称之为是一个哈希表
+
+### 冲突
+
+前面提到过，哈希表是不允许在存在相同的 key 作为数组下标的，但是经过哈希化后的数据不可避免的会得到相同结果，即，相同的 key。这种情况我们称之为冲突。
+
+解决冲突主要有两种方式：
+
+1、链地址法
+
+2、开放地址法
+
+### 链地址法
+
+链地址法是一种比较常见的解决冲突的方案(也称为拉链法)。
+
+链地址法解决冲突的办法是每个数组单元中存储的不再是单个数据，而是一个链条。这个链条常见的是使用数组或者链表。比如是链表，也就是每个数组单元中存储着一个链表。一旦哈希化出重复的 key，则将数据插入到对应 key 位置存放链表的首端或者末端即可。当查询时，先根据哈希化后的下标值找到对应的位置，再取出链表，线性依次查询数据。
+
+<div style="margin: 10px 0; text-align: center">
+<img src="./img/hash_link.png" />
+</div>
+
+### 开放地址法
+
+开放地址法的主要工作方式是寻找空白的单元格来添加重复的数据。因此，如何探索空白单元格就成为了开放地址法的关键，目前主要有以下几种方式寻找空白单元格：
+
+#### **线性探测：**
+
+- 存放数据(比如存放 32)：
+
+1、经过哈希化得到的 index=2，但是在插入的时候发现该位置已经有了其他数据了，怎么办呢?
+
+2、线性探测就是从 index 位置+1 开始一点点查找合适的位置来放置 32，直到找到一个空的位置，这个时候 32 就会放在该位置.
+
+- 查询数据(查询 32)：
+
+1、首先经过哈希化得到 index=2，比较 2 的位置结果和查询的数值是否相同,相同那么就直接返回。不相同则线性查找, 从 index 位置+1 开始查找和 32 一样的.
+
+2、这里有一个特别需要注意的地方：如果 32 的位置我们之前没有插入,是否将整个哈希表查询一遍来确定 32 存不存在吗?当然不是,查询过程有一个约定,就是查询到空位置,就停止。因为存放的时候就是线性一个个存放的。
+
+- 删除数据(删除 32)：
+
+删除操作一个数据项时，不可以将这个位置下标的内容设置为 null。为什么呢？因为将它设置为 null 可能会影响我们之后查询其他操作，因为查询是遇到空格就停止，所以通常删除一个位置的数据项时，我们可以将它进行特殊处理(比如设置为-1)。当我们之后看到-1 位置的数据项时，就知道查询时要继续查询，但是插入时这个位置可以放置数据。
+
+- 线性探测的缺点：线性探测有一个比较严重的问题,就是聚集。即如果之前的数据是连续插入的，那么新插入的一个数据可能需要探测很长的距离
+
+比如我在没有任何数据的时候,插入的是 22-23-24-25-26，那么意味着下标值：2-3-4-5-6 的位置都有元素。这种一连串填充单元就叫做聚集。**聚集会影响哈希表的性能,无论是插入/查询/删除都会影响。**比如我们插入一个 32,会发现连续的单元都不允许我们放置数据,并且在这个过程中我们需要探索多次。
+
+#### **二次探测**
+
+二次探测主要优化的是探测时的步长。线性探测的步长为 1。二次探测则对步长做了优化，比如从下标值 x 开始：x+1^2，x+2^2，x+3^2。这样就可以一次性探测比较长的距离,比避免那些聚集带来的影响.
+
+缺点：但是二次探测依然存在问题,比如我们连续插入的是 32-112-82-2-192,那么它们依次累加的时候步长的相同的也就是这种情况下会造成步长不一的一种聚集.还是会影响效率.(当然这种可能性相对于连续的数字会小一些)。
+
+#### 再哈希法
+
+再哈希法的做法就是把关键字用另外一个哈希函数,再做一次哈希化，用这次哈希化的结果作为步长.对于指定的关键字,步长在整个探测中是不变的,不过不同的关键字使用不同的步长.
+
+第二次哈希化需要具备以下特点：
+
+- 与第一个哈希函数不同(不要再使用上一次的哈希函数了，不然结果还是原来的位置)
+- 不能输出为 0(否则,将没有步长.每次探测都是原地踏步，算法就进入了死循环)
+- 一般选用 stepSize = constant - (key % constant)。constant 为常量，且是小于数组长度的质数。
+
+### 哈希表的效率
+
+在谈及哈希表效率时，我们有必要介绍一下哈希表的装填因子。
+
+装填因子表示当前哈希表中已经包含的数据项和整个哈希表长度的比值。装填因子=总数据项/哈希表长度。
+
+开放地址法的装填因子最大是 1。因为它必须寻找到空白的单元才能将元素放入。链地址法的装填因子可以大于 1，因为拉链法可以无限的延伸下去，只要你愿意.(当然后面效率就变低了)。开放地址法查询时间随装填因子的变大呈指数型增长，而链地址法则呈线性增加。因此，总的来说，链地址法的效率比开放地址法要高很多。
+
+:::tip
+当装填因子大于 0.75 时，就要对数组进行扩容；而装填因子小于 0.25 时，就需要对数组进行缩容。
+:::
+
+如果没有产生冲突，那么哈希表的效率就会更高。如果发生冲突，存取时间就依赖后来的探测长度。而平均探测长度以及平均存取时间，取决于填装因子，随着填装因子变大，探测长度也越来越长。
+
+:::warning
+正如前面介绍的那样，链地址法的装填因子(loadFactor)可以大于 1，因此这种哈希表可以无限制的插入数据。但是，随着数据量的增加，每一个下标所存储的链表/数组的长度会越来越长，从而降低查找效率。所以，需要在合适的情况对数组进行扩容，通常 loadFactor 大于 0.75 就需要进行扩容操作。
+
+扩容之后，所有的数据项一定要同时进行修改(重新调用哈希函数来获取到不同的位置）
+:::
+
+### 哈希表的实现
+
+**哈希函数**
+
+```js
+/**
+ * @description 哈希函数
+ * 1、将字符串转换成较大的数字(hashCode)
+ * 2、哈希化：将较大的数字hashCode压缩到数组范围内
+ * @param {string} 字符串
+ * @param {number} 数组范围
+ */
+function hashFunc(str, size) {
+  var hashCode = 0
+  // 霍纳算法，常用37作为底数计算hashCode
+  for (var i = 0; i < str.length; i++) {
+    // string.prototype.charCodeAt(index), 将string[i]转化成对应Unicode编码数字
+    hashCode = 37 * hashCode + str.charCodeAt(i)
+  }
+  // 哈希化
+  var index = hashCode % size
+  return index
+}
+```
+
+**哈希表**
+
+思路：哈希表的每个 index 对应的是一个数组(bucket)，bucket 中存放的是 key 和 value，我们继续使用一个数组存储它们。最终我们的哈希表的数据格式是这样: [[ [k,v],[k,v],[k,v] ]，[ [k,v],[k,v] ], [ [k,v] ] ]
+
+<details>
+<summary style="margin: 20px 0;color: #4e98bb; cursor: pointer">展开查看实现代码</summary>
+
+```js
+function HashTable() {
+  this.storage = [] //哈希表
+  this.count = 0 //已存放元素个数
+  this.limit = 7 // 数组总长度，最好为质数，初始值为7，
+
+  // 哈希函数
+  HashTable.prototype.hashFunc = function (str, size) {
+    var hashCode = 0
+    for (var i = 0; i < str.length; i++) {
+      hashCode = hashCode + 37 * str.charCodeAt(i)
+    }
+    var index = hashCode % size
+    return index
+  }
+  // 增加和修改
+  HashTable.prototype.put = function (key, value) {
+    // 根据key获取对应的index
+    var index = this.hashFunc(key, this.limit)
+    // 根据index取出对应的bucket
+    var bucket = this.storage[index]
+    // 判断该bucket是否有值
+    if (!bucket) {
+      // 如果没有，则新建一个bucket
+      bucket = []
+      this.storage[index] = bucket
+    }
+    // 循环bucket中元素，判断元素的第一项是否等于key，如果相等，则是修改
+    for (var i = 0; i < bucket.length; i++) {
+      if (bucket[i][0] === key) {
+        bucket[i][1] = value
+        return
+      }
+    }
+    // 如果不等，则是增加
+    bucket.push([key, value])
+    this.count++
+    // 是否扩容
+    if (this.count > this.limit * 0.75) {
+      var newSize = this.getPrime(this.limit * 2)
+      this.resize(newSize)
+    }
+  }
+  // 查找
+  HashTable.prototype.get = function (key) {
+    var index = this.hashFunc(key, this.limit)
+    var bucket = this.storage[index]
+    if (!bucket) {
+      return null
+    } else {
+      for (var i = 0; i < bucket.length; i++) {
+        if (bucket[i][0] === key) {
+          return bucket[i][1]
+        }
+      }
+      return null
+    }
+  }
+  // 删除
+  HashTable.prototype.remove = function (key) {
+    var index = this.hashFunc(key, this.limit)
+    var bucket = this.storage[index]
+    if (!bucket) return null
+    for (var i = 0; i < bucket.length; i++) {
+      var tuple = bucket[i]
+      if (tuple[0] === key) {
+        bucket.splice(i, 1)
+        this.count--
+        // 是否缩容
+        if (this.limit > 7 && this.count < this.limit * 0.25) {
+          var newSize = this.getPrime(Math.floor(this.limit / 2))
+          this.resize(newSize)
+        }
+        return tuple[1]
+      }
+    }
+    return null
+  }
+  // 扩容/缩容
+  HashTable.prototype.resize = function (newLimit) {
+    // 保存旧数组中的内容
+    var oldStorage = this.storage
+    // 重置所有属性
+    this.storage = []
+    this.count = 0
+    this.limit = newLimit
+    // 将oldStorage中所有数据重新放置到新的数组中
+    for (var i = 0; i < oldStorage.length; i++) {
+      var bucket = oldStorage[i]
+      if (!bucket) continue
+      for (var j = 0; j < bucket.length; j++) {
+        var tuple = bucket[j]
+        this.put(tuple[0], tuple[1])
+      }
+    }
+  }
+  // 判断一个数是否为质数
+  HashTable.prototype.isPrime = function (num) {
+    // 获取平方根
+    var tmp = ParseInt(Math.sqrt(num))
+    for (var i = 0; i <= tmp; i++) {
+      if (num % i === 0) return false
+    }
+    return true
+  }
+  // 获取质数
+  HashTable.prototype.getPrime = function (num) {
+    while (!this.isPrime(num)) {
+      num++
+    }
+    return num
+  }
+}
+```
+
+</details>
+
+### 哈希表的优缺点
+
+**优点：** 哈希表的插入/删除效率都是非常高的
+**缺点：**
+
+1、空间利用率不高,底层使用的是数组,并且某些单元是没有被利用的.
+
+​2、哈希表中的元素是无序的,不能按照固定的顺序来遍历哈希表中的元素.
+
+​3、不能快速的找出哈希表中的最大值或者最小值这些特殊的值.
