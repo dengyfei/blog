@@ -21,7 +21,15 @@ categories:
 
 ## 复杂度
 
-数据结构和算法是为了解决“如何让计算机更快时间、更省空间的完成既定任务的”问题的。因此，**执行时间**和**占用空间**就成为了评判数据结构和算法性能的两个维度。这两个维度就成为复杂度。通常使用大 O 表示法表示一个数据结构和算法的复杂度。
+数据结构和算法是为了解决“如何让计算机更快时间、更省空间的完成既定任务”的问题。因此，**执行时间**和**占用空间**就成为了评判数据结构和算法性能的两个维度。这两个维度就称为复杂度。通常使用大 O 表示法表示一个数据结构和算法的复杂度。
+
+推导大 O 表示法的方式:
+
+1、用常量 1 取代运行时间中所有的加法常量
+
+2、在修改后的运行次数函数中,只保留最高阶项
+
+3、如果最高存在且不为 1，则去除与这个项相乘的常数
 
 ## 数组
 
@@ -40,7 +48,7 @@ categories:
 <img src="./img/stack.png">
 </div>
 
-栈( stack )，它是一种受限的线性表,后进先出(LIFO)
+栈( stack )，它是一种受限的线性表，它的受限性在于后进先出(LIFO)
 
 1、其限制是仅允许在表的一端进行插入和删除运算。这一端被称为栈顶，相对地，把另一端称为栈底。
 
@@ -94,7 +102,7 @@ function Stack() {
 
 ## 队列
 
-队列(Queue)，也是一种受限的数据结构。它是一种受限的线性表，先进先出(FIFO First In First Out)，受限之处在于它只允许在表的前端（ front ）进行删除操作(出队)，而在表的后端（rear）进行插入操作(入队)。
+队列(Queue)，也是一种受限的数据结构。它是一种受限的线性表，其受限性在于先进先出(FIFO First In First Out)，即，只允许在表的前端（ front ）进行删除操作(出队)，而在表的后端（rear）进行插入操作(入队)。
 
 ### 队列的基本操作
 
@@ -130,9 +138,9 @@ function Queue() {
 
 ### 优先级队列
 
-我们知道,普通的队列插入一个元素，数据会被放在后端，并且需要前面所有的元素都处理完成后才会处理前面的数据。但是优先级队列在插入一个元素的时候会考虑该数据的优先级。插入时先和其他数据优先级进行比较，比较完成后,可以得出这个元素在队列中正确的位置。其他处理方式,和基本队列的处理方式一样。
+我们知道,普通的队列插入一个元素，数据会被放在后端，并且需要前面所有的元素都处理完成后才会处理后面的数据。但是优先级队列在插入一个元素的时候会考虑该数据的优先级。插入时先和其他数据优先级进行比较，比较完成后,可以得出这个元素在队列中正确的位置。其他处理方式,和基本队列的处理方式一样。
 
-优先级队列主要考虑的问题:
+实现优先级队列主要考虑的问题:
 
 - 每个元素不再只是一个数据，还会包含数据的优先级
 - 在添加方式中，根据优先级放入正确的位置。
@@ -170,9 +178,9 @@ function PriorityQueue() {
 }
 ```
 
-### 时间复制度
+### 时间复杂度
 
-访问：O(N)
+访问：O(1)
 
 搜索：O(N)
 
@@ -699,7 +707,7 @@ Set.prototype.subSet = function (otherSet) {
 
 1、哈希化：将大数字转化成数组范围内下标的过程，我们就称之为哈希化。
 
-2、哈希函数：通常我们会将单词转成大数字，大数字再进行哈希化的代码实现放在一个函数中，这个函数我们成为哈希函数。即，实现哈希化的函数。
+2、哈希函数：通常我们会将单词转成大数字，大数字再进行哈希化的代码实现放在一个函数中，这个函数我们称之为哈希函数。即，实现哈希化的函数。
 
 3、哈希表：最终将数据插入到的这个数组，对整个结构的封装，我们就称之为是一个哈希表
 
@@ -944,3 +952,590 @@ function HashTable() {
 ​2、哈希表中的元素是无序的,不能按照固定的顺序来遍历哈希表中的元素.
 
 ​3、不能快速的找出哈希表中的最大值或者最小值这些特殊的值.
+
+## 二叉树
+
+### 概念
+
+了解二叉树之前，我们先来熟悉一下树的常见概念：
+
+1、节点的度：某个节点的子节点的数量称为节点的度。
+
+2、树的度：树的所有节点中，最大的度数称为树的度。
+
+3、路径长度：从节点 n1 到 nk 的路径中所包含边的个数，
+
+4、节点层次：根节点的层次是 1，其他任一节点的层数是其父节点层数+1
+
+5、树的深度：树中所有节点中的最大层次
+
+:::tip
+如果树中每个节点最多只能有两个子节点，这样的树就成为"二叉树"。几乎上所有的树都可以表示成二叉树的形式。
+:::
+
+### 二叉树特性
+
+- 一个二叉树第 i 层的最大节点数为：2^(i-1)
+- 深度为 k 的二叉树有最大节点总数为：2^k-1
+- 对任何非空二叉树 T，若 n0 表示叶节点的个数，n2 表示深度为 2 的非叶节点个数，那么两者满足关系 n0=n2+1
+
+### 二叉搜索树
+
+二叉搜索树（BST，Binary Search Tree )，也称二叉排序树或二叉查找树，二叉搜索树是一颗二叉树，子节点可以为空，如果不为空，满足以下性质 ∶
+
+- 非空左子树的所有键值小于其根节点的键值。
+- 非空右子树的所有键值大于其根节点的键值。
+- 左、右子树本身也都是二叉搜索树。
+
+<div style="text-align:center">
+<img src="./img/BST.png"/>
+</div>
+
+:::warning
+二叉搜索树的特点就是相对较小的值总是保存在左节点上，相对较大的值总是保存在右节点上。
+:::
+
+### 二叉树的遍历
+
+**先序遍历**
+
+1、访问根节点
+
+2、先序遍历左子树
+
+3、先序遍历右子树
+
+**中序遍历**
+
+1、中序遍历左子树
+
+2、访问根节点
+
+3、中序遍历右子树
+
+**后序遍历**
+
+1、后序遍历左子树
+
+2、后序遍历右子树
+
+3、访问根节点
+
+<details>
+<summary style="margin: 20px 0;color: #4e98bb; cursor: pointer">展开查看实现代码</summary>
+
+```js
+function BinarySearchTree() {
+  function Node(key) {
+    this.key = key
+    this.left = null
+    this.right = null
+  }
+  // 属性
+  this.root = null
+
+  // 方法
+  // 插入
+  BinarySearchTree.prototype.insert = function (key) {
+    // 1、根据 key 创建节点
+    const newNode = new Node(key)
+    // 2、判断根节点是否有值
+    if (this.root === null) {
+      this.root = newNode
+    } else {
+      this.insertNode(this.root, newNode)
+    }
+  }
+  BinarySearchTree.prototype.insertNode = function (node, newNode) {
+    if (newNode.key < node.key) {
+      if (node.left === null) {
+        node.left = newNode
+      } else {
+        this.insertNode(node.left, newNode)
+      }
+    } else {
+      if (node.right === null) {
+        node.right = newNode
+      } else {
+        this.insertNode(node.right, newNode)
+      }
+    }
+  }
+
+  // 树的遍历
+  // 先序遍历
+  BinarySearchTree.prototype.preOrderTraversal = function () {
+    const nodeList = []
+    this.preOrderTraversalNode(this.root, nodeList)
+    return nodeList
+  }
+  BinarySearchTree.prototype.preOrderTraversalNode = function (node, nodeList) {
+    if (node !== null) {
+      // 处理当前访问节点
+      nodeList.push(node.key)
+      // 查找左子树中的节点
+      this.preOrderTraversalNode(node.left, nodeList)
+      // 查找右子树中的节点
+      this.preOrderTraversalNode(node.right, nodeList)
+    }
+  }
+
+  // 中序遍历
+  BinarySearchTree.prototype.midOrderTraversal = function () {
+    const nodeList = []
+    this.midOrderTraversalNode(this.root, nodeList)
+    return nodeList
+  }
+  BinarySearchTree.prototype.midOrderTraversalNode = function (node, nodeList) {
+    if (node !== null) {
+      // 查找左子树中的节点
+      this.midOrderTraversalNode(node.left, nodeList)
+      // 处理访问的节点
+      nodeList.push(node.key)
+      // 查找右子树中的节点
+      this.midOrderTraversalNode(node.right, nodeList)
+    }
+  }
+
+  // 后序遍历
+  BinarySearchTree.prototype.postOrderTraversal = function () {
+    const nodeList = []
+    this.postOrderTraversalNode(this.root, nodeList)
+    return nodeList
+  }
+  BinarySearchTree.prototype.postOrderTraversalNode = function (
+    node,
+    nodeList
+  ) {
+    if (node !== null) {
+      // 查找左子树中的节点
+      this.postOrderTraversalNode(node.left, nodeList)
+      // 查找右子树中的节点
+      this.postOrderTraversalNode(node.right, nodeList)
+      // 处理访问节点
+      nodeList.push(node.key)
+    }
+  }
+
+  // 寻找最大值
+  BinarySearchTree.prototype.max = function () {
+    // 1、获取根节点
+    let node = this.root
+    // 2、依次向右查找
+    while (node.right !== null) {
+      node = node.right
+    }
+    return node.key
+  }
+
+  // 寻找最小值
+  BinarySearchTree.prototype.min = function () {
+    let node = this.root
+    while (node.left !== null) {
+      node = node.left
+    }
+    return node.key
+  }
+
+  // 寻找某个值
+  BinarySearchTree.prototype.search = function (key) {
+    return this.searchNode(this.root, key)
+  }
+
+  BinarySearchTree.prototype.searchNode = function (node, key) {
+    if (node === null) return false
+    if (key < node.key) {
+      return this.searchNode(node.left, key)
+    } else if (key > node.key) {
+      return this.searchNode(node.right, key)
+    } else {
+      return true
+    }
+  }
+
+  // 删除节点
+  BinarySearchTree.prototype.remove = function (key) {
+    // 寻找要删除的节点
+    let current = this.root
+    let parent = null
+    let isLeftChild = true
+    while (current.key !== key) {
+      parent = current
+      if (key < current.key) {
+        current = current.left
+        isLeftChild = true
+      } else {
+        current = current.right
+        isLeftChild = false
+      }
+      // 最后都没有找到，直接返回
+      if (current === null) return false
+    }
+    // 根据对应的情况删除节点
+    // 1、删除的节点是叶子节点（没有子节点）
+    if (current.left === null && current.right === null) {
+      if (current === this.root) {
+        // 如果删除的节点是根节点
+        this.root = null
+      } else if (isLeftChild) {
+        parent.left = null
+      } else {
+        parent.right = null
+      }
+    }
+    // 2、删除的节点有一个子节点
+    else if (current.right === null) {
+      // 如果删除的是根节点
+      if (current === this.root) {
+        this.root = current.left
+      } else if (isLeftChild) {
+        parent.left = current.left
+      } else {
+        parent.right = current.left
+      }
+    } else if (current.left === null) {
+      if (current === this.root) {
+        this.root = current.right
+      } else if (isLeftChild) {
+        parent.left = current.right
+      } else {
+        parent.right = current.right
+      }
+    }
+    // 3、删除的节点有两个子节点
+    else {
+      // 3.1、获取后继节点
+      let successor = this.getSuccessor(current)
+      // 3.2、判断是否为根节点
+      if (current === this.root) {
+        this.root = successor
+      } else if (isLeftChild) {
+        parent.left = successor
+      } else {
+        parent.right = successor
+      }
+      // 3.3、将删除节点的左子树 = current.left
+      successor.left = current.left
+    }
+  }
+  BinarySearchTree.prototype.getSuccessor = function (delNode) {
+    let successor = delNode
+    let current = delNode.right
+    let successorParent = delNode
+    while (current !== null) {
+      successorParent = successor
+      successor = current
+      current = current.left
+    }
+    if (successor !== delNode.right) {
+      successorParent.left = successor.right
+      successor.right = delNode.right
+    }
+    return successor
+  }
+}
+```
+
+</details>
+
+比较好的二叉搜索树当中的数据应该时左右分布均匀的，我们称之为平衡树。但是当我们连续插入较小数/较大数时，会造成二叉搜索树的分布不均匀，严重的甚至会将二叉搜索树直接变成链表(比如依次插入 10、9、8、7、6、……)，这种就被称之为非平衡树。
+
+<div style="text-align:center; margin:10px">
+<img src="./img/unbalanced.png"/>
+</div>
+对于一棵平衡二叉树来说，插入/查找等操作的效率是O(logN)，而对于一棵非平衡二叉树，查找效率变成了O(N)。
+
+### 两种常见的平衡树
+
+1、AVL 树：
+
+- AVL 树是最早的一种平衡树。它有些办法保持树的平衡(每个节点多存储了一个额外的数据)因为 AVL 树是平衡的,所以时间复杂度也是 O(logN)。
+- 但是,每次插入/删除操作相对于红黑树效率都不高，所以整体效率不如红黑树
+
+2、红黑树：
+
+- 红黑树也通过一些特性来保持树的平衡.
+- 因为是平衡树,所以时间复杂度也是在 O(logN).
+- 另外插入/删除等操作，红黑树的性能要优于 AVL 树，所以现在平衡树的应用基本都是红黑树.
+
+### 红黑树
+
+**红黑树的特性：**
+
+1.节点是红色或黑色。
+
+⒉.根节点是黑色。
+
+3.每个叶子节点都是黑色的空节点(NIL 节点)。
+
+4.每个红色节点的两个子节点都是黑色。(从每个叶子到根的所有路径上不能有两个连续的红色节点)
+
+5.从任一节点到其每个叶子的所有路径都包含相同数目的黑色节点。
+
+<div style="text-algin:center; margin: 10px">
+<img src="./img/red_black_tree.png" />
+</div>
+
+前面的约束确保了红黑树的关键特性： **从根到叶子的最长可能路径，不会超过最短可能路径的两倍长。结果就是这个树基本是平衡的。**
+
+为什么可以做到最长路径不超过最短路径的两倍呢：
+
+性质 4 决定了路径不能有两个相连的红色节点。那么最短的可能路径都是黑色节点，最长的可能路径是红色和黑色交替。
+
+性质 5 所有路径都有相同数目的黑色节点。
+
+也就是说假设最短路径是 3 个黑色节点，最长路径就可能是红黑交替，最多 6 个节点。
+
+### 红黑树的变换
+
+插入一个新节点时,有可能树不再平衡,可以通过三种方式的变换,让树保持平衡：
+
+1、变色
+
+为了重新符合红黑树的规则，尝试把红色节点变为黑色，或者把黑色节点变为红色，称为变色。
+
+**首先，一般假定插入的新的节点通常都是红色节点，** 因为在插入节点为红色的时候，有可能存在插入一次而不违反红黑树任何规则的情况，而插入黑色节点，必然会导致有一条路径上多了黑色节点，这是很难调整的。红色节点可能导致出现红红相连的情况,但是这种情况可以通过颜色调换和旋转来调整。
+
+2、左旋
+
+逆时针旋转红黑树的两个节点，使得父节点被自己的右孩子取代，而自己成为新父节点的左孩子。下图，身为右孩子的 Y 取代了 X 的位置，而 X 变成了 Y 的左孩子，此为左旋转。
+
+<div style="text-algin:center; margin: 10px">
+<img src="./img/turn_left.png" />
+</div>
+
+3、右旋
+
+顺时针旋转红黑树的两个节点，使得父节点被自己的左孩子取代，而自己成为自己的右孩子。下图，身为左孩子的 Y 取代了 X 的位置，而 X 变成了 Y 的右孩子，此为右旋转
+
+<div style="text-algin:center; margin: 10px">
+<img src="./img/turn_right.png" />
+</div>
+
+## 排序算法
+
+### 冒泡排序
+
+**思路**
+
+1、对未排序的各元素从头到尾依次比较相邻的两个元素大小关系如果左边的元素较大,则交换位置。
+
+2、向右移动一个位置,比较下面两个元素
+
+3、当走到最右端时，最大的元素一定被放在了最右边
+
+4、按照这个思路,从最左端重新开始,这次比较到倒数第二个位置即可。
+
+5、依次类推,就可以将数据排序完成
+
+**实现**
+
+```js
+function bubbleSort(arr) {
+  let length = arr.length
+  for (let i = length; i >= 0; i--) {
+    for (let j = 0; j < i; j++) {
+      if (arr[j] > arr[j + 1]) {
+        let tmp = arr[j]
+        arr[j] = arr[j + 1]
+        arr[j + 1] = tmp
+      }
+    }
+  }
+  return arr
+}
+```
+
+:::tip
+冒泡排序的比较次数和交换次数为：O(N^2)
+:::
+
+## 选择排序
+
+**思路**
+
+1、选定第一个索引位置，然后和后面元素依次比较
+
+2、如果后面的元素小于第一个索引位置,则交换位置，经过一轮的比较后,可以确定第一个位置是最小的，放到第一个位置
+
+3、然后使用同样的方法把剩下的元素逐个比较即可
+
+4、可以看出选择排序，第一轮会选出最小值，第二轮会选出第二小的值，直到最后
+
+```js
+function selectionSort(arr) {
+  let length = arr.length
+  // 从0开始取数据
+  for (let i = 0; i < length - 1; i++) {
+    let min = i
+    // 寻找i后面最小的那个数
+    for (let j = i + 1; j < length; j++) {
+      if (arr[j] < arr[min]) {
+        min = j
+      }
+    }
+    // 交换位置
+    if (i !== min) {
+      let tmp = arr[i]
+      arr[i] = arr[min]
+      arr[min] = tmp
+    }
+  }
+  return arr
+}
+```
+
+:::tip
+选择排序的交换次数为 O(N)，比较次数为 O(N^2)
+:::
+
+## 插入排序
+
+**思路：**
+
+插入排序思想的核心是局部有序。什么是局部有序呢？比如在一个队列中的人，我们选择其中一个作为标记的队员，这个被标记的队员左边的所有队员已经是局部有序的。这意味着：有一部分人是按顺序排列好的。有一部分还没有顺序.
+
+1、从第一个元素开始，该元素可以认为已经被排序
+
+2、取出下一个元素，在已经排序的元素序列中从后向前扫描如果该元素（已排序)大于新元素，将该元素移到下一位置
+
+3、重复上一个步骤，直到找到已排序的元素小于或者等于新元素的位置将新元素插入到该位置后,重复上面的步骤.
+
+```js
+function insertionSort(arr) {
+  const length = arr.length
+  for (let i = 1; i < length; i++) {
+    const tmp = arr[i]
+    let j = i
+    // 将数据往后挪一个位置，直到找到合适位置插入
+    while (arr[j - 1] > tmp && j > 0) {
+      arr[j] = arr[j - 1]
+      j--
+    }
+    arr[j] = tmp
+  }
+  return arr
+}
+```
+
+:::tip
+插入排序的比较次数是冒泡排序和选择排序的 1/2，因此，插入排序是简单排序中最快的方式
+:::
+
+## 希尔排序
+
+前面介绍的冒泡排序、选择排序、插入排序都属于简单排序，尽管它们的比较次数和交换次数不尽相同，但其实它们的时间复杂度均为 O(N^2)。
+
+**思路：**
+
+希尔排序是基于插入排序而优化升级的，它是先将数据按 gap 为间隙分成若干组，然后组内进行插入排序，之后不断的减少 gap 的值并重复上面的步骤，直到 gap 为 1。事实上，简单排序中的插入排序就是 gap 为 1 的希尔排序。
+
+```js
+function shellSort(arr) {
+  const length = arr.length
+  // 设定一个gap
+  let gap = Math.floor(length / 2)
+  // gap不断减小
+  while (gap >= 1) {
+    // 各个组内比较大小
+    for (let i = gap; i < length; i++) {
+      let tmp = arr[i]
+      let j = i
+      while (arr[j - gap] > tmp && j > gap - 1) {
+        arr[j] = arr[j - gap]
+        j -= gap
+      }
+      arr[j] = tmp
+    }
+  }
+  gap = Math.floor(gap / 2)
+}
+```
+
+## 快速排序
+
+大多数情况下，快速排序几乎都是目前所有排序算法中最快的。
+
+**思路：**
+
+快速排序的主要思想是：分而治之。
+
+我们可以先从中选出任意一个数字 n，然后将小于该数字的都放到左边，大于该数字的都放到其右边，那么这个位置就是该数字 n 的正确位置。
+
+如何实现小于的都在左边，大于的都在右边呢？我们可以将 n 放到最右边，然后在第一个位置设一个左指针，在倒数第二个位置设一个右指针，两个指针同时向中间靠拢，当左指针碰到大于 n 的数时停止，而右指针碰到小于 n 的数停止，此时交换左右指针的元素，然后再次移动，当左指针等于或大于右指针时，交换左指针和元素 n 的位置。
+
+然后，我们再递归的从左边分组和右边分组中各自任取一个数字，重复上面的操作，直至整个数据排序完毕。
+
+当然这个任意数字也是有选择规律的，好的选择方法可以提升快速排序的效率，而不好的选择方法甚至可以使得快速排序的效率低于希尔排序。目前比较合理的选择方法是选取第一个位置、中间位置、最后一个位置元素当中的中位数作为分开的枢纽。
+
+```js
+/**
+ * @description: 找出中位数
+ * @param {*} left 左边位置
+ * @param {*} right 右边位置
+ * @param {*} arr 原数组
+ * @return {*}  中位数
+ */
+function findMid(left, right, arr) {
+  // 找出中间位置
+  let center = Math.floor((left + right) / 2)
+  // 先将三个数排序，减少后期排序次数
+  if (arr[left] > arr[center]) {
+    swap(left, center, arr)
+  }
+  if (arr[left] > arr[right]) {
+    swap(left, right, arr)
+  }
+  if (arr[center] > arr[right]) {
+    swap(center, right, arr)
+  }
+  // 将中间位置的元素放到右边倒数第二个位置，因为前一步已经把较大的放到了最右边
+  swap(center, right - 1, arr)
+  // 返回中位数
+  return arr[right - 1]
+}
+
+// 交换元素
+function swap(m, n, arr) {
+  let tmp = arr[m]
+  arr[m] = arr[n]
+  arr[n] = tmp
+}
+
+function quickSort(arr) {
+  quick(0, arr.length - 1, arr)
+  return arr
+}
+
+function quick(left, right, arr) {
+  // 结束条件
+  if (left >= right) return
+  // 获取枢纽，并把枢纽放到倒数第二个位置
+  let pivot = findMid(left, right, arr)
+  // 定义变量，两个指针，用于记录当前找到的位置
+  let i = left
+  let j = right - 2
+  while (true) {
+    while (arr[i] < pivot) {
+      i++
+    }
+    while (arr[j] > pivot) {
+      j--
+    }
+    if (i < j) {
+      swap(i, j, arr)
+    } else {
+      break
+    }
+  }
+  // 将枢纽放到正确的位置
+  swap(i, right - 1, arr)
+  // 分而治之
+  quick(left, i - 1, arr)
+  quick(i + 1, right, arr)
+}
+```
+
+:::tip
+快速排序的效率为 O(N \* logN)
+:::
