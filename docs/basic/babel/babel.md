@@ -13,7 +13,7 @@ categories:
 
 ![caniuse.png](./img/caniuse.png)
 
-而 Babel 是一个工具链，主要就是用于将 ES6 中的新特性转换为 ES5 等向后兼容的低版本 JavaScript 特性，以适应对应低版本的浏览器。包括：语法转换、源代码转换、polyfill 等。
+而 Babel 是一个工具链，主要就是用于将 ES6 中的新特性转换为 ES5 等向后兼容的低版本 JavaScript 特性，以适应对应低版本的浏览器。包括：语法转换、源代码转换、polyfill 等。Babel 的执行过程包括了解析、转换、代码生成，从而将源代码转换成目标代码
 
 :::danger
 babel 只会针对
@@ -85,8 +85,16 @@ babel 在转译的时候，会将源代码分成 syntax 和 api 两部分来处�
 使用预设也是非常简单，直接在 Babel 的配置文件中配置即可：
 
 ```js
+//  方式一
 {
-  "presets": [ ["@babel/preset-env"] ]
+  "presets": [ "@babel/preset-env" ]
+}
+
+// 方式二：
+{
+  "presets": [
+    ["@babel/preset-env"]
+   ]
 }
 ```
 
@@ -113,6 +121,21 @@ npx babel index.js -o compiler.js
 可以看到 Babel 将箭头函数和 const 语法转换成了 es5 中的 function 和 var，并且默认开启了严格模式。
 
 需要说明的是，`@babel/preset-env`会根据你配置的目标环境生成插件列表来编译。对于基于浏览器或者 Electron 的项目，官方推荐使用`.browserslistrc`文件来指定目标环境。默认情况下，如果你没有在 Babel 配置文件中设置`targets`或者`ignoreBrowserslistConfig`，`@babel/preset-env`会使用`browserslist`配置源，此时，我们就需要新建一个`.browserslistrc`来配置源。
+
+当然，我们也可以针对使用的预设传递参数，比如 target，useBuiltIns 等等，更多参数可以参考[Babel 官网](https://babeljs.io/docs/babel-preset-env#options)，这样我们的预设要以下面这种方式传递参数:
+
+```js
+{
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        target: '> 0.25%, not dead'
+      }
+    ]
+   ]
+}
+```
 
 前面讲到，预设实质是一系列 Babel 插件的集合，其主要作用是将高版本的语法转换成低版本的语法，即处理 syntax 部分，换句话说，就是使用低版本的语法来代替高版本语法。但是对于 api 部分，比如 promise，Generator 等，预设是无法处理的，因为 es5 中压根就没有对应的方法来替代。这样就会导致编译出来的代码也就无法在低版本浏览器中运行。此时 polyfill 就应运而生了。
 

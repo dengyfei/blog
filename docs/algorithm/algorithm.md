@@ -694,7 +694,7 @@ Set.prototype.subSet = function (otherSet) {
 哈希表通常是基于数组进行实现的，但是相对于数组，它又有许多的优势：
 
 - 它可以提供非常快速的插入-删除-查找操作
-- 无论多少数据,插入和删除值需要接近常量的时间：即 O(1)的时间级。实际上，只需要几个机器指令即可完成
+- 无论多少数据,插入和删除值都是接近常量的时间：即 O(1)的时间级。实际上，只需要几个机器指令即可完成
 - 哈希表的速度比树还要快，基本可以瞬间查找到想要的元素。
 - 哈希表相对于树来说编码要容易很多。
 
@@ -755,7 +755,7 @@ Set.prototype.subSet = function (otherSet) {
 
 - 线性探测的缺点：线性探测有一个比较严重的问题,就是聚集。即如果之前的数据是连续插入的，那么新插入的一个数据可能需要探测很长的距离
 
-比如我在没有任何数据的时候,插入的是 22-23-24-25-26，那么意味着下标值：2-3-4-5-6 的位置都有元素。这种一连串填充单元就叫做聚集。**聚集会影响哈希表的性能,无论是插入/查询/删除都会影响。**比如我们插入一个 32,会发现连续的单元都不允许我们放置数据,并且在这个过程中我们需要探索多次。
+比如我在没有任何数据的时候,插入的是 22-23-24-25-26，那么意味着下标值：2-3-4-5-6 的位置都有元素。这种一连串填充单元就叫做聚集。**聚集会影响哈希表的性能,无论是插入/查询/删除都会影响。** 比如我们插入一个 32,会发现连续的单元都不允许我们放置数据,并且在这个过程中我们需要探索多次。
 
 #### **二次探测**
 
@@ -763,7 +763,7 @@ Set.prototype.subSet = function (otherSet) {
 
 缺点：但是二次探测依然存在问题,比如我们连续插入的是 32-112-82-2-192,那么它们依次累加的时候步长的相同的也就是这种情况下会造成步长不一的一种聚集.还是会影响效率.(当然这种可能性相对于连续的数字会小一些)。
 
-#### 再哈希法
+#### **再哈希法**
 
 再哈希法的做法就是把关键字用另外一个哈希函数,再做一次哈希化，用这次哈希化的结果作为步长.对于指定的关键字,步长在整个探测中是不变的,不过不同的关键字使用不同的步长.
 
@@ -802,8 +802,8 @@ Set.prototype.subSet = function (otherSet) {
  * @description 哈希函数
  * 1、将字符串转换成较大的数字(hashCode)
  * 2、哈希化：将较大的数字hashCode压缩到数组范围内
- * @param {string} 字符串
- * @param {number} 数组范围
+ * @param {string} str 字符串
+ * @param {number} size 数组范围
  */
 function hashFunc(str, size) {
   var hashCode = 0
@@ -977,11 +977,11 @@ function HashTable() {
 
 - 一个二叉树第 i 层的最大节点数为：2^(i-1)
 - 深度为 k 的二叉树有最大节点总数为：2^k-1
-- 对任何非空二叉树 T，若 n0 表示叶节点的个数，n2 表示深度为 2 的非叶节点个数，那么两者满足关系 n0=n2+1
+- 对任何非空二叉树 T，若 n0 表示叶节点的个数，n2 表示度数为 2 的非叶节点个数，那么两者满足关系 n0=n2+1
 
 ### 二叉搜索树
 
-二叉搜索树（BST，Binary Search Tree )，也称二叉排序树或二叉查找树，二叉搜索树是一颗二叉树，子节点可以为空，如果不为空，满足以下性质 ∶
+二叉搜索树（BST，Binary Search Tree )，也称二叉排序树或二叉查找树，二叉搜索树是一颗二叉树，其子节点可以为空，如果不为空，满足以下性质 ∶
 
 - 非空左子树的所有键值小于其根节点的键值。
 - 非空右子树的所有键值大于其根节点的键值。
@@ -1214,7 +1214,7 @@ function BinarySearchTree() {
       } else {
         parent.right = successor
       }
-      // 3.3、将删除节点的左子树 = current.left
+      // 3.3、将后继节点的左子节点指向删除节点的左子节点
       successor.left = current.left
     }
   }
@@ -1222,13 +1222,17 @@ function BinarySearchTree() {
     let successor = delNode
     let current = delNode.right
     let successorParent = delNode
+    // 找到删除节点右子树中最小的节点，即，后继节点，并赋值给successor
     while (current !== null) {
       successorParent = successor
       successor = current
       current = current.left
     }
+    // 如果后继节点不是删除节点的右子节点，将后继节点提到删除位置
     if (successor !== delNode.right) {
+      // 删除节点的右子节点的左子节点指向后继节点的右节点
       successorParent.left = successor.right
+      // 后继节点的右子节点指向删除节点的右子节点
       successor.right = delNode.right
     }
     return successor
@@ -1312,9 +1316,7 @@ function BinarySearchTree() {
 <img src="./img/turn_right.png" />
 </div>
 
-## 排序算法
-
-### 冒泡排序
+## 冒泡排序
 
 **思路**
 
@@ -1336,9 +1338,8 @@ function bubbleSort(arr) {
   for (let i = length; i >= 0; i--) {
     for (let j = 0; j < i; j++) {
       if (arr[j] > arr[j + 1]) {
-        let tmp = arr[j]
-        arr[j] = arr[j + 1]
-        arr[j + 1] = tmp
+        // 交换位置
+        ;[arr[j], arr[j + 1]] = [arr[j + 1], arr[j]]
       }
     }
   }

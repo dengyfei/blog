@@ -1665,7 +1665,7 @@ watch 模式的缺点：
 
 ### webpack-dev-server
 
-**webpack-dev-server 的本质是通过 express 启动一个本地服务**，wds 是一个本地开发服务器，会自动监听变化，自动打包构建并将打包的结果暂时存放在内存中，而且自动刷新浏览器。
+**webpack-dev-server 的本质是通过 express 启动一个本地服务**，wds 是一个本地开发服务器，会自动监听变化，自动打包构建并将打包的结果通过 memfs(一个第三方库)暂时存放在内存中，而且自动刷新浏览器。
 
 - webpack-dev-server 本身也是一台运行在计算机内存中的服务器，具体是运行在根目录下的 public 目录中
 
@@ -1695,6 +1695,20 @@ webpack-dev-server 的优势在于，编译后不会写入任何输出文件，�
 :::
 
 ### devServer 配置
+
+### contentBase
+
+contentBase 是配置当某个文件不通过 webpack 打包时，服务器要向哪个路径下去寻找该资源，默认是根目录下的`public`文件夹，
+
+![contentBase.png](./img/contentBase.png)
+
+此时，对于那些没有通过 webpack 打包(如在 index.html 中直接 script 引入)的资源，服务器就会来到根目录下的`public`中寻找。
+
+:::tip
+开发阶段，一般通过配置 contentBase 来指定资源路径，以避免文件 copy，优化性能，提高效率
+
+打包阶段，一般是通过 copyWebpackPlugin 插件来 copy 文件。
+:::
 
 #### 模块热替换(HMR)
 
@@ -1735,8 +1749,31 @@ HMR 是如何可以做到只更新一个模块中的内容呢？
 <img src="./img/HMR.svg"/>
 </div>
 
+#### 开启模块热替换
+
+```js
+module.exports = {
+  devServer: {
+    hot: true,
+  },
+}
+```
+
+开启之后，我们还需要告诉 webpack，哪些模块需要开启模块热替换，比如，我们有个 element.js 文件需要开启模块热更新，那么在引入 element.js 文件的时候，需要按如下方式引入：
+
+```js
+// 第一次导入模块
+import './element.js'
+
+if (module.hot) {
+  module.hot.accept('./element.js', () => {
+    console.log('element模块发生了热更新')
+  })
+}
+```
+
 :::tip
-webpack V5.x 版本 devServer.hot 的默认值就是 true，即默认开启热模块替换
+vue-loader 已经帮我们实现了上面的代码，所以我们在使用 vue 开发的时候，已经是模块热更新了，react 也是一样的。
 :::
 
 #### hotOnly
