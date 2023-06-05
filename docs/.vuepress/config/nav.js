@@ -30,7 +30,7 @@ module.exports = [
   },
   {
     text: '算法',
-    link: 'algorithm/algorithm.md',
+    link: 'algorithm/algorithm',
   },
   {
     text: '博客',
