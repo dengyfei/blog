@@ -94,9 +94,9 @@ npm run build
 
 ## 配置文件
 
-前面有介绍，我们可以通过在命令行或者`package.json`文件的脚本中，向 webpack 传递参数。但是当我们有许多参数需要传递给 webpack，比如，我们需要传递入口路径、出口路径、各种 loader 和 plugin 等等，这个时候，如果依旧采用这种方法传递参数，显示是非常冗余且不灵活的。
+前面有介绍，我们可以通过在命令行或者`package.json`文件的脚本中，向 webpack 传递参数。但是当我们有许多参数需要传递给 webpack，比如，我们需要传递入口路径、出口路径、各种 loader 和 plugin 等等，这个时候，如果依旧采用这种方法传递参数，显然是非常冗余且不灵活的。
 
-此时我们就可以采用配置文件的方式传递参数。webpack 在执行时，默认会寻找根目录下一个名为`webpack.config.js`的文件并解析文件内部的配置项。因此，我们可以在根目录下创建一个`webpack.config.js`文件，并传入配置项。
+此时我们就可以采用配置文件的方式传递参数。事实上，webpack 在执行时，默认会寻找根目录下一个名为`webpack.config.js`的文件并解析文件内部的配置项。因此，我们可以在根目录下创建一个`webpack.config.js`文件，并传入配置项。
 :::tip
 当执行 webpack 命令时，webpack 会通过 commonjs 的方式读取这个配置，因此，在配置文件中，我们也需要通过 commonjs 的方式导出一个对象
 :::
@@ -129,6 +129,8 @@ module.exports = {
 }
 ```
 
+经过上面的配置，webpack 就会将`./app/src/index.js`文件作为打包的入口文件，自定义 loader 的寻找也会以`./app`文件夹为起点。
+
 ### 入口及出口配置
 
 ```js
@@ -153,7 +155,7 @@ module.exports = {
 
 entry：指定入口文件，相对路径。
 :::danger
-entry 要求传入的是一个相对路径，并不是相对文件所在的路径，而是相对 context 配置的路径，context 属性默认使用的是当前根目录。
+entry 要求传入的是一个相对路径，并不是相对文件所在的路径，而是相对于上下文 context 配置的路径，context 属性默认使用的是当前运行路径。
 :::
 
 output：指定出口文件
@@ -185,7 +187,7 @@ module.exports = {
 :::warning
 在生产环境下，当使用 webpack 打包构建时，会在 index.html 引入静态资源路径前面加上 publicPath 的值。
 
-在开发环境下，使用 webpack-dev-server 进行开发时，它并不会在 index.html 的引入静态资源的路径前拼接 publicPath 的值。相反，它指的是 webpack-dev-server 在进行打包时生成的静态文件所在的位置，默认时 webpack-dev-server 服务器的根目录下。
+在开发环境下，使用 webpack-dev-server 进行开发时，它并不会在 index.html 的引入静态资源的路径前拼接 publicPath 的值。相反，它指的是 webpack-dev-server 在进行打包时生成的静态文件所在的位置，默认是 webpack-dev-server 服务器的根目录下。
 
 总而言之，publicPath 在不同环境下，有不同的含义
 :::
@@ -223,7 +225,7 @@ loader 可以用于对模块源代码的转换，**loader 的本质是一个函�
 
 我们可以将 css 文件看成一个模块，然后通过 import 或@import 来读取这个模块。但是在加载这个模块时，webpack 并不知道如何引入 css 模块，所以我们必须使用 loader 来帮助我们完成对 css 文件的引入。
 
-对于加载 css 文件来说，我们需要一个可以读取 css 文件的 loader，最常用的就是 css-loader。css-loader 的作用就是完成对 css 文件的读取，并且将其转换成一个 commonjs 对象插入到引入的 js 文件中。除此之外，css-loader 不会对引入的 css 文件做任何操作。当然 css 文件中@import 引入另一个 css 文件的操作也是由 css-loader 来完成。
+对于加载 css 文件来说，我们需要一个可以读取 css 文件的 loader，最常用的就是 css-loader。css-loader 的作用就是完成对 css 文件的读取，将 css 转换成 js。具体操作是将 css 文件内容转换成一个字符串并 push 到 css-loader 暴露暴露出来的一个数组当中。除此之外，css-loader 不会对引入的 css 文件做任何操作。当然 css 文件中@import 引入另一个 css 文件的操作也是由 css-loader 来完成。
 
 **安装**
 
@@ -256,7 +258,7 @@ rules 属性对应的值是一个数组： [Rule]
 
   2、options：可选的属性，值是一个字符串或者对象，值会被传入到 loader 中
 
-UseEntry 也可以简写成一个字符串(如：use:['style-loader'])，它其实式 loader 属性的简写方式(如：use:[{ loader: 'style-loader' }])
+UseEntry 也可以简写成一个字符串(如：use:['style-loader'])，它其实是 loader 属性的简写方式(如：use:[{ loader: 'style-loader' }])
 
 - loader 属性：Rule.use:[{loader}]的简写
 
@@ -356,9 +358,9 @@ module.exports = {
 
 ### less-loader
 
-如果我们编写的是 less 文件，首先我们需要将 less 文件转化成 css 文件，这个过程是 less 包来完成的。
+如果我们编写的是 less 文件，首先我们需要将 less 文件转化成 css 文件，这个过程是由 less 包来完成的。
 
-less-loader 首先会通过 less 包将 less 文件转成 css 文件，然后按照之前的步骤进行编译和打包
+less-loader 首先会通过调用 less 包将 less 文件转成 css 文件，然后按照之前的步骤进行编译和打包，因此在使用 less-loader 之前需要安装 less 和 less-loader 两个包。
 
 **安装**
 
@@ -525,7 +527,7 @@ new Vue({
 ```js
 // webpack.config.js
 
-const VueLoaderPlugin = require('vue-loader/lib/plugin')
+const {VueLoaderPlugin} = require('vue-loader/lib/plugin')
 module.exports = {
   ……
   module: {
@@ -547,6 +549,10 @@ module.exports = {
   plugins: [new VueLoaderPlugin()],
 }
 ```
+
+:::danger
+值得注意的是：vue-loader 16+版本无法解析 vue 2.x。
+:::
 
 ### eslint-loader
 
@@ -1131,7 +1137,9 @@ module.exports = {
         {
           from: './public',
           to: 'public',
-          globOptions: ['**/DS_Store：mac', '**/index.html']
+          globOptions: {
+            ignore: ['**/DS_Store：mac', '**/index.html']
+          }
         }
       ]
     })
@@ -1164,20 +1172,20 @@ module.exports = {
   },
   plugins: [
     new MiniCssExtractPlugin({
-      filename: 'css/[name].[contentHash:6].css'    //命名
+      filename: 'css/[name].[contenthash:6].css'    //命名
     })
   ]
 }
 ```
 
 :::tip
-**hash、contentHash、chunkHash 的区别：**
+**hash、contenthash、chunkhash 的区别：**
 
-**hash：** hash 值的生成和整个项目有关系，并且和 webpack 中的 compilation 对象相关。比如我们现在有两个入口 index.js 和 main.js ，它们分别会输出到不同的 bundle 文件中，并且在文件名称中我们有使用 hash ，这个时候，如果修改了 index.js 文件中的内容，这时，webpack 中的 compilation 对象就会发生变化， hash 值也会收到 compilation 对象的影响而发生变化，那就意味着两个文件的名称都会发生变化。
+**hash：** hash 值的生成和整个项目有关系，并且和 webpack 中的 compilation 对象相关。比如我们现在有两个入口 index.js 和 main.js ，它们分别会输出到不同的 bundle 文件中，并且在文件名称中我们有使用 hash ，这个时候，如果修改了 index.js 文件中的内容，这时，webpack 中的 compilation 对象就会发生变化， hash 值也会受到 compilation 对象的影响而发生变化，那就意味着两个文件的名称都会发生变化。
 
-**chunkHash：** chunkhash 可以有效的解决上面的问题，它会根据不同的入口来解析生成 hash 值，即和 webpack 打包的 chunk 有关。比如我们修改了 index.js，那么 main.js 的 chunkhash 是不会发生改变的。但是由这个入口构成的依赖图上的其他文件名会跟随变化，也就是会重新打包。
+**chunkhash：** chunkhash 可以有效的解决上面的问题，它会根据不同的入口来解析生成 hash 值，即和 webpack 打包的 chunk 有关。比如我们修改了 index.js，那么 main.js 的 chunkhash 是不会发生改变的。但是由这个入口构成的依赖图上的其他文件名会跟随变化，也就是会重新打包。
 
-**contentHash：** contenthash 表示生成的文件 hash 名称，只和内容有关系，即，文件内容不变，contentHash 不变。比如我们的 index.js，引入了一个 style.css ， style.css 又被抽取到一个独立的 css 文件中，这个 css 文件在命名时，如果我们使用的是 chunkhash ，那么当 index.js 文件的内容发生变化时，css 文件的命名也会发生变化，这个时候我们可以使用 contenthash。
+**contenthash：** contenthash 表示生成的文件 hash 名称，只和内容有关系，即，文件内容不变，contentHash 不变。比如我们的 index.js，引入了一个 style.css ， style.css 又被抽取到一个独立的 css 文件中，这个 css 文件在命名时，如果我们使用的是 chunkhash ，那么当 index.js 文件的内容发生变化时，css 文件的命名也会发生变化，这个时候我们可以使用 contenthash。
 :::
 
 ### CssMinimizerWebpackPlugin
@@ -1619,6 +1627,8 @@ webpack-dev-server 允许 webpack 搭建一个本地服务器。为什么需要�
 
 webpack 给我们提供了 watch 模式： 在该模式下，webpack 依赖图中的所有文件，只要有一个发生了更新，那么代码将被重新编译； 不需要我们再次手动去运行 npm run build 指令了。
 
+webpack watch 模式的原理是：webpack 通过轮询的方式获取到文件修改信息，一段时间后会去检查是否是有文件更新，如果有，webpack 会重新编译打包生成 dist 文件，并写入到 index.html 文件中，最后刷新浏览器，实现更新内容同步。
+
 **方式一：使用指令**
 
 在终端中输入，或在 package.json 中配置脚本`webpack --watch`，这个时候就会启动 watch 模式。
@@ -1665,7 +1675,7 @@ watch 模式的缺点：
 
 ### webpack-dev-server
 
-**webpack-dev-server 的本质是通过 express 启动一个本地服务**，wds 是一个本地开发服务器，会自动监听变化，自动打包构建并将打包的结果通过 memfs(一个第三方库)暂时存放在内存中，而且自动刷新浏览器。
+**webpack-dev-server(WDS) 的本质是通过在本地启动一个 express 服务**，该服务会自动监听变化，自动打包构建并将打包的结果通过 memfs(一个第三方库)暂时存放在内存中，最后自动刷新浏览器。
 
 - webpack-dev-server 本身也是一台运行在计算机内存中的服务器，具体是运行在根目录下的 public 目录中
 
@@ -1673,7 +1683,7 @@ watch 模式的缺点：
 <img src="./img/dev_server.png"/>
 </div>
 
-- 不会产生 dist 文件，把打包后的资源直接放到 webpack-dev-server 服务器下面，放到服务器的什么地方，就是由 publicPath 决定的，同时，它也决定了怎么才能访问这些资源。默认情况下，publicPath 的取值是 '/', 也就是说，会把打包后的文件放到 webpack-dev-server 服务器的根目录下，文件名是在 output 配置中的 filename. 如果配置了 publicPath，webpack-dev-server 会把所有的文件打包到 publicPath 指定的目录下，相当于在项目根目录下创建了一个 publicPath 目录, 然后把打包后的文件放到了里面，只不过我们看不到而已, 文件名还是 output 配置中的 filename。
+- 不会产生 dist 文件，把打包后的资源直接放到 webpack-dev-server 服务器下面，放到服务器的什么地方，就是由 devServer.publicPath 决定的，同时，它也决定了怎么才能访问这些资源。默认情况下，publicPath 的取值是 '/', 也就是说，会把打包后的文件放到 webpack-dev-server 服务器的根目录下，文件名是在 output 配置中的 filename. 如果配置了 publicPath，webpack-dev-server 会把所有的文件打包到 publicPath 指定的目录下，相当于在项目根目录下创建了一个 publicPath 目录, 然后把打包后的文件放到了里面，只不过我们看不到而已, 文件名还是 output 配置中的 filename。
 - 减少磁盘的读取，提高构建效率。
 
 **使用：**
@@ -1696,13 +1706,13 @@ webpack-dev-server 的优势在于，编译后不会写入任何输出文件，�
 
 ### devServer 配置
 
-### contentBase
+#### contentBase
 
 contentBase 是配置当某个文件不通过 webpack 打包时，服务器要向哪个路径下去寻找该资源，默认是根目录下的`public`文件夹，
 
 ![contentBase.png](./img/contentBase.png)
 
-此时，对于那些没有通过 webpack 打包(如在 index.html 中直接 script 引入)的资源，服务器就会来到根目录下的`public`中寻找。
+此时，对于那些没有通过 webpack 打包(如在 index.html 中直接 script 引入)的资源，服务器就会来到`devServer.contentBase`路径下寻找。
 
 :::tip
 开发阶段，一般通过配置 contentBase 来指定资源路径，以避免文件 copy，优化性能，提高效率
@@ -1789,6 +1799,16 @@ module.exports = {
 }
 ```
 
+#### host
+
+host 用于设置主机地址，默认值是 localhost，如果希望其他电脑也可以访问，可以设置为 0.0.0.0。
+
+这里介绍一下 localhost 和 0.0.0.0 的区别：
+
+- localhost：本质上是一个域名，通常情况下会被解析成 127.0.0.1。127.0.0.1 是一个回环地址(Loop Back Address)，表达的意思其实是我们主机自己发出去的包，直接被自己接收。正常的数据库包一般会经过应用层 - 传输层 - 网络层 - 数据链路层 - 物理层，然后被对方电脑接收；而回环地址则直接在网络层就被获取到了，是不会经常数据链路层和物理层的，也就不会在网路核心中传输。
+
+- 0.0.0.0：监听 IPV4 上所有的地址，再根据端口找到不同的应用程序，在同一个网段下的主机中，通过 ip 地址是可以访问的。
+
 #### compress
 
 是否为静态文件开启 gzip 压缩，这回大大减少静态文件的大小，默认开启。
@@ -1818,7 +1838,7 @@ proxy 是我们开发中非常常用的一个配置选项，它的值是一个�
 
 - `target`：表示的是代理到的目标地址，比如` /api/moment`会被代理到`http://localhost:8888/api/moment`；
 
-- `pathRewrite`：重写路径，使用值去替换键，默认情况下，我们的 /api-hy 也会被写入到 URL 中，如果希望删除，可以使用 pathRewrite；
+- `pathRewrite`：重写路径，使用值去替换键，默认情况下，我们的 /api 也会被写入到 URL 中，如果希望删除，可以使用 pathRewrite；
 
 - `secure`：默认情况下不接收转发到 https 的服务器上，如果希望支持，可以设置为 false； 默认为 true
 
@@ -1849,6 +1869,8 @@ module.exports = {
 ```
 
 ## resolve 模块解析
+
+resolve 用于设置模块如何被解析，在开发中我们会有各种各样的模块依赖，这些模块可能来自于自己编写的代码，也可能来自第三方库。而 resolve 可以帮助 webpack 从每个 require/import 语句中，找到需要引入到合适的模块代码，其本质是通过 [enhanced-resolve](https://github.com/webpack/enhanced-resolve) 来解析文件路径的。
 
 首先我们来认识 webpack 能解析的三种文件路径：
 
