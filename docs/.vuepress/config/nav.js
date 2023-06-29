@@ -32,6 +32,16 @@ module.exports = [
     text: '算法',
     link: 'algorithm/algorithm',
   },
+  // {
+  //   text: '前端随笔',
+  //   icon: 'reco-suggestion',
+  //   items: [
+  //     {
+  //       text: '浏览器',
+  //       link
+  //     },
+  //   ],
+  // },
   {
     text: '博客',
     icon: 'reco-blog',
